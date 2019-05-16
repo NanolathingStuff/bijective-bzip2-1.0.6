@@ -1,0 +1,27 @@
+-Repo con solo bzip2
+	_scrivere al prof se farsi account "bene impostato"	X
+	_fare sto stramaledetto account per stage	X
+		_inviarlo al prof con le password
+-creare bij-transform
+	_cercare la funzione ciclicrotation dove e come implementata
+	_mentre aspetti fai funzione last(string) da inviare al prof:
+		_copia striinga, ciclic rotations(reimplementa su stringa singola len^2), ultime lettere su stringa[len], ordina, return
+	_forum BWT
+	_STRINGS C: https://stackoverflow.com/questions/8600181/allocate-memory-and-save-string-in-c
+-run-length  copia e capisci che fa
+-modificare report in bzip2
+	-cerca: bsw, bswt, bwt, bw-t ,BW-transform,Burrows-Wheeler, Burrows-Wheeler transform  
+-confrontare i 2 metodi di compressione
+ 	_install nmake for windows	
+	_move from UbuntoWinSubsystem to Bzip,make install PREFIX=/*PATH(absolute)*/
+	_Installation of Bzip2:
+		Prepare Bzip2 for compilation with|	make -f Makefile-libbz2_so;	make clean
+			The -f flag will cause Bzip2 to be built using a different Makefile file, 
+			in this case the Makefile-libbz2_so file, which creates a dynamic libbz2.so library and 	
+			links the Bzip2 utilities against it.
+		Compile the package:	make -> crea bzip2 (.file) da lanciare con iput
+		Install it:	make install
+		make install PREFIX=mkdir/bzip2
+
+Ubuntu:	  cd mnt/c/Users/silva/Desktop/stage
+	  gcc -c bij-transform.c; gcc -o bij-t bij-transform.o ; ./bij-t

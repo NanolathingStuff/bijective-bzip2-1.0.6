@@ -44,27 +44,27 @@ extern "C" {
 #define BZ_UNEXPECTED_EOF    (-7)
 #define BZ_OUTBUFF_FULL      (-8)
 #define BZ_CONFIG_ERROR      (-9)
-
+//bz_stream
 typedef 
    struct {
       char *next_in;
-      unsigned int avail_in;
+      unsigned int avail_in;	//counter
       unsigned int total_in_lo32;
       unsigned int total_in_hi32;
 
       char *next_out;
-      unsigned int avail_out;
+      unsigned int avail_out;	//counter
       unsigned int total_out_lo32;
       unsigned int total_out_hi32;
 
-      void *state;
+      void *state;	//used to point the State(E/D)-holder (father struct)
 
       void *(*bzalloc)(void *,int,int);
       void (*bzfree)(void *,void *);
       void *opaque;
    } 
-   bz_stream;
-
+   bz_stream;//used in EState, DState (struct attribute)
+	//used in functions : BZ_API(s), handle_compress, BZ2_decompress
 
 #ifndef BZ_IMPORT
 #define BZ_EXPORT
@@ -96,7 +96,7 @@ typedef
 
 
 /*-- Core (low-level) library functions --*/
-
+/*-- initialized in bzlib.c --*/
 BZ_EXTERN int BZ_API(BZ2_bzCompressInit) ( 
       bz_stream* strm, 
       int        blockSize100k, 

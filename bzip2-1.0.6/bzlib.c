@@ -127,14 +127,14 @@ void prepare_new_block ( EState* s )
 
 
 /*---------------------------------------------------*/
-static
-void init_RL ( EState* s )
+static		
+void init_RL ( EState* s )	//@ used in BZ_API(s),flush_RL[252]; initialize EState 
 {
    s->state_in_ch  = 256;
    s->state_in_len = 0;
 }
 
-
+//@ used in BZ_API(s), check if EState is empty
 static
 Bool isempty_RL ( EState* s )
 {
@@ -214,7 +214,7 @@ int BZ_API(BZ2_bzCompressInit)
 /*---------------------------------------------------*/
 static
 void add_pair_to_block ( EState* s )
-{
+{	//@used in ADD_CHAR_TO_BLOCK[260], flush_RL[252]
    Int32 i;
    UChar ch = (UChar)(s->state_in_ch);
    for (i = 0; i < s->state_in_len; i++) {
@@ -248,15 +248,15 @@ void add_pair_to_block ( EState* s )
 
 
 /*---------------------------------------------------*/
-static
-void flush_RL ( EState* s )
+//@ used in handle_compress[360]
+static void flush_RL ( EState* s )
 {
-   if (s->state_in_ch < 256) add_pair_to_block ( s );
-   init_RL ( s );
+   if (s->state_in_ch < 256) add_pair_to_block ( s ); 
+   init_RL ( s );	//reset: s->state_in_ch  = 256;s->state_in_len = 0;
 }
 
-
 /*---------------------------------------------------*/
+//@ used in handle_compress[360]
 #define ADD_CHAR_TO_BLOCK(zs,zchh0)               \
 {                                                 \
    UInt32 zchh = (UInt32)(zchh0);                 \
@@ -285,12 +285,12 @@ void flush_RL ( EState* s )
 
 
 /*---------------------------------------------------*/
-static
-Bool copy_input_until_stop ( EState* s )
+//@ used in handle_compress[360]
+static Bool copy_input_until_stop ( EState* s )
 {
    Bool progress_in = False;
 
-   if (s->mode == BZ_M_RUNNING) {
+   if (s->mode == BZ_M_RUNNING) {  //BZ_M_RUNNING = 2
 
       /*-- fast track the common case --*/
       while (True) {
@@ -299,14 +299,14 @@ Bool copy_input_until_stop ( EState* s )
          /*-- no input? --*/
          if (s->strm->avail_in == 0) break;
          progress_in = True;
-         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((UChar*)(s->strm->next_in))) ); 
+         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((UChar*)(s->strm->next_in))) ); //preprocessor function[260]
          s->strm->next_in++;
          s->strm->avail_in--;
          s->strm->total_in_lo32++;
          if (s->strm->total_in_lo32 == 0) s->strm->total_in_hi32++;
       }
 
-   } else {
+   } else {	//same thing in the if, just with avail_in_expect condition
 
       /*-- general, uncommon case --*/
       while (True) {
@@ -317,7 +317,7 @@ Bool copy_input_until_stop ( EState* s )
          /*-- flush/finish end? --*/
          if (s->avail_in_expect == 0) break;
          progress_in = True;
-         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((UChar*)(s->strm->next_in))) ); 
+         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((UChar*)(s->strm->next_in))) ); //preprocessor function[260]
          s->strm->next_in++;
          s->strm->avail_in--;
          s->strm->total_in_lo32++;
@@ -330,21 +330,21 @@ Bool copy_input_until_stop ( EState* s )
 
 
 /*---------------------------------------------------*/
-static
-Bool copy_output_until_stop ( EState* s )
+//@ used in handle_compress[360]
+static Bool copy_output_until_stop ( EState* s )
 {
    Bool progress_out = False;
 
    while (True) {
-
+	//@copy array bz_stream in array  EState->zbits, modify  counters 
       /*-- no output space? --*/
       if (s->strm->avail_out == 0) break;
-
+		//WHY USE break instead of: while(s->strm->avail_out != 0  s->state_out_pos < s->numZ&) ?
       /*-- block done? --*/
-      if (s->state_out_pos >= s->numZ) break;
-
+      if (s->state_out_pos >= s->numZ) break;	//numZ = limits  current posns
+	
       progress_out = True;
-      *(s->strm->next_out) = s->zbits[s->state_out_pos];
+      *(s->strm->next_out) = s->zbits[s->state_out_pos]; //DIFFERENCES WITH ADD_CHAR_TO_BLOCK: ......
       s->state_out_pos++;
       s->strm->avail_out--;
       s->strm->next_out++;
@@ -357,34 +357,34 @@ Bool copy_output_until_stop ( EState* s )
 
 
 /*---------------------------------------------------*/
-static
-Bool handle_compress ( bz_stream* strm )
+//@used in BZ_API(BZ2_bzCompress)[407]
+static Bool handle_compress ( bz_stream* strm )	
 {
    Bool progress_in  = False;
    Bool progress_out = False;
    EState* s = strm->state;
-   
+   //check state: if 1: copy input  ; if 2: copy output; switch state at the end
    while (True) {
-
-      if (s->state == BZ_S_OUTPUT) {
+	
+      if (s->state == BZ_S_OUTPUT) {	//BZ_S_OUTPUT = 1
          progress_out |= copy_output_until_stop ( s );
          if (s->state_out_pos < s->numZ) break;
          if (s->mode == BZ_M_FINISHING && 
              s->avail_in_expect == 0 &&
              isempty_RL(s)) break;
          prepare_new_block ( s );
-         s->state = BZ_S_INPUT;
+         s->state = BZ_S_INPUT;	//switch state
          if (s->mode == BZ_M_FLUSHING && 
              s->avail_in_expect == 0 &&
              isempty_RL(s)) break;
       }
 
-      if (s->state == BZ_S_INPUT) {
+      if (s->state == BZ_S_INPUT) { //BZ_S_INPUT = 2 
          progress_in |= copy_input_until_stop ( s );
          if (s->mode != BZ_M_RUNNING && s->avail_in_expect == 0) {
             flush_RL ( s );
             BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );
-            s->state = BZ_S_OUTPUT;
+            s->state = BZ_S_OUTPUT;	//switch state
          }
          else
          if (s->nblock >= s->nblockMAX) {
@@ -398,8 +398,8 @@ Bool handle_compress ( bz_stream* strm )
       }
 
    }
-
-   return progress_in || progress_out;
+	//@return true if copied something in s(?State).zbits
+   return progress_in || progress_out;	//copied input or copied output 
 }
 
 
@@ -529,12 +529,12 @@ int BZ_API(BZ2_bzDecompressInit)
 
 
 /*---------------------------------------------------*/
-/* Return  True iff data corruption is discovered.
+/* Return  True if data corruption is discovered.
    Returns False if there is no problem.
 */
 static
 Bool unRLE_obuf_to_output_FAST ( DState* s )
-{
+{	//@ used in BZ_API(BZ2_bzDecompress)[808]
    UChar k1;
 
    if (s->blockRandomised) {

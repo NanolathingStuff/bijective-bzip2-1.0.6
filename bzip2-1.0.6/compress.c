@@ -65,18 +65,19 @@ void bsFinishWrite ( EState* s )
       s->bsLive -= 8;                         \
    }                                          \
 }
-
+//numZ:input and output limits and current posns    //zbits: alias arr1    
 
 /*---------------------------------------------------*/
+//bsBuff, bsLive :variables for stream creation
 static
 __inline__
 void bsW ( EState* s, Int32 n, UInt32 v )
-{
+{	
    bsNEEDW ( n );
    s->bsBuff |= (v << (32 - s->bsLive - n));
    s->bsLive += n;
 }
-
+//@ used in: bsPutUInt32[84], bsPutUChar[95], sendMTFValues ( EState* s )[240],BZ2_compressBlock ( EState* s, Bool is_last_block )[603]
 
 /*---------------------------------------------------*/
 static

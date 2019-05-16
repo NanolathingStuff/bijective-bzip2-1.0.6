@@ -20,7 +20,8 @@
 
 
 #include "bzlib_private.h"
-
+/*Huffman coding: A Method for the Construction of Minimum-Redundancy Codes
+using compression data simbols (source: wikipedia)*/
 /*---------------------------------------------------*/
 #define WEIGHTOF(zz0)  ((zz0) & 0xffffff00)
 #define DEPTHOF(zz1)   ((zz1) & 0x000000ff)

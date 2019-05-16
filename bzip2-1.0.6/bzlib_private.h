@@ -37,7 +37,7 @@
 /*-- General stuff. --*/
 
 #define BZ_VERSION  "1.0.6, 6-Sept-2010"
-
+/*@ rename variable type	--*/
 typedef char            Char;
 typedef unsigned char   Bool;
 typedef unsigned char   UChar;
@@ -45,7 +45,7 @@ typedef int             Int32;
 typedef unsigned int    UInt32;
 typedef short           Int16;
 typedef unsigned short  UInt16;
-
+//for use boolean value in C
 #define True  ((Bool)1)
 #define False ((Bool)0)
 
@@ -69,7 +69,7 @@ extern void BZ2_bz__AssertH__fail ( int errcode );
 #else
 #define AssertD(cond,msg) /* */
 #endif
-
+   /*remember: preprocessor functions -> find and replace the function name with the function body when the compile find the function name*/
 #define VPrintf0(zf) \
    fprintf(stderr,zf)
 #define VPrintf1(zf,za1) \
@@ -84,7 +84,7 @@ extern void BZ2_bz__AssertH__fail ( int errcode );
    fprintf(stderr,zf,za1,za2,za3,za4,za5)
 
 #else
-
+   //error
 extern void bz_internal_error ( int errcode );
 #define AssertH(cond,errcode) \
    { if (!(cond)) bz_internal_error ( errcode ); }
@@ -139,7 +139,7 @@ extern Int32 BZ2_rNums[512];
    s->rTPos  = 0                               \
 
 #define BZ_RAND_MASK ((s->rNToGo == 1) ? 1 : 0)
-
+//used in unRLE_obuf_to_output_FAST(bzlib.c)
 #define BZ_RAND_UPD_MASK                       \
    if (s->rNToGo == 0) {                       \
       s->rNToGo = BZ2_rNums[s->rTPos];         \
@@ -196,7 +196,7 @@ extern UInt32 BZ2_crc32Table[256];
 typedef
    struct {
       /* pointer back to the struct bz_stream */
-      bz_stream* strm;
+      bz_stream* strm;	//bzlib.h[48]
 
       /* mode this stream is in, and whether inputting */
       /* or outputting data */
@@ -204,7 +204,7 @@ typedef
       Int32    state;
 
       /* remembers avail_in when flush/finish requested */
-      UInt32   avail_in_expect;
+      UInt32   avail_in_expect;	//confront with avail_in counter of strm
 
       /* for doing the block sorting */
       UInt32*  arr1;
@@ -223,8 +223,8 @@ typedef
 
       /* run-length-encoding of the input */
       UInt32   state_in_ch;
-      Int32    state_in_len;
-      BZ_RAND_DECLS;
+      Int32    state_in_len;	
+      BZ_RAND_DECLS;		//used for decompress
 
       /* input and output limits and current posns */
       Int32    nblock;
@@ -270,19 +270,19 @@ typedef
 /*-- externs for compression. --*/
 
 extern void 
-BZ2_blockSort ( EState* );
+BZ2_blockSort ( EState* );	//@initialized in blocksort.c [1031] (used in BZ2_compressBlock)
 
 extern void 
-BZ2_compressBlock ( EState*, Bool );
+BZ2_compressBlock ( EState*, Bool );	//@initialized in compress.c [602] (used in handle_compress)
 
 extern void 
-BZ2_bsInitWrite ( EState* );
+BZ2_bsInitWrite ( EState* );	//@initialized in compress.c [37] (used in BZ2_compressBlock)
 
 extern void 
-BZ2_hbAssignCodes ( Int32*, UChar*, Int32, Int32, Int32 );
+BZ2_hbAssignCodes ( Int32*, UChar*, Int32, Int32, Int32 );	//@initialized in huffman.c [155] (used in sendMTFValues)
 
 extern void 
-BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );
+BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );	//@initialized in huffman.c [66] (used in sendMTFValues)
 
 
 
@@ -482,15 +482,14 @@ typedef
 /*-- externs for decompression. --*/
 
 extern Int32 
-BZ2_indexIntoF ( Int32, Int32* );
+BZ2_indexIntoF ( Int32, Int32* );	//@initialized in bzlib.c [687] (used in BZ_GET_SMALL)
 
 extern Int32 
-BZ2_decompress ( DState* );
+BZ2_decompress ( DState* );	//@initialized in decompress.c [106] (used in BZ_API)
 
 extern void 
 BZ2_hbCreateDecodeTables ( Int32*, Int32*, Int32*, UChar*,
-                           Int32,  Int32, Int32 );
-
+                           Int32,  Int32, Int32 );	//@initialized in huffman.c [173] (used in BZ2_decompress)
 
 #endif
 
