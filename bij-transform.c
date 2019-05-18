@@ -8,6 +8,12 @@
 	for(i = 0; i < strlen(w); i++)
 		R = strncat(R, CyclicRotations(w), strlen(w)); //	R = R + CyclicRotations(w); 
 	return last(R);
+}
+char * bij_transform(char * a){
+	int *w = LyndonFact(a);
+	char *R;
+	
+	return last(R);	
 }*/
 char * BWT(char * s){
  	//const char *R = CyclicRotations(s); // R = CyclicRotations(s)
@@ -72,46 +78,6 @@ char * BWT(char * s){
 		res[i] = rotations[i][dim -1];*/
 	return r;
 }
-/*char * LyndonFact(char *s){
-	int i = 0, n = strlen(s), j, k;
-	//char fact[] = "";
-	char *lyndon = malloc(2*n);//fact;
-	
-	//printf("entra while\n");
-	
-	while (i < n) {
-		
-		printf("%d ", i);
-		
-		j = i+1, k = 1;
-		while (j < n && s[k] <= s[j]) {
-			
-			printf("%d\n", j);
-			
-            if (s[k] < s[j])
-                k = i;
-            else
-                k++;
-            j++;
-        }
-        
-        printf("enter copy\n");
-        
-        while (i <= k) {
-            strcat(lyndon, strncpy( lyndon, &s[i], j-k ));	//factorization.push_back(s.substr(i, j - k));
-            i += j - k;
-            
-            printf("%s\n", lyndon);
-            
-        }
-	}
-	
-	printf("OK");
-	
-	lyndon[2*n-1] = '\0';
-	return lyndon;
-}
-char **/
 int* LyndonFact(char* s){ 	//vector<string> duval(string const& s) {
 	//printf("%s\n", s);
     int n = strlen(s), i = 0, j, k;
@@ -150,7 +116,6 @@ int* LyndonFact(char* s){ 	//vector<string> duval(string const& s) {
     //printf("return\n");
 	return b;
 }
-
 //@reimplement append single char
 char * appendC(char *str, char c){
 	size_t len = strlen(str);
@@ -176,23 +141,29 @@ void removeC(char *str, char c){
 		i++;  
 	}
 }
-/*char * last(char *s, int dim){
- 	char copy[strlen(s) + 1]; //copia per non modificare s
- 	int i = 0;
- 	for(i = 0; i < (dim + 1)*sizeof(char); i++){
- 		copy[i] = s[dim * i];//i+1?
- 	}
- 	char *n = malloc((strlen(s) + 1)*sizeof(char));	
- 	char p ;
-	for(i = 0; i < (strlen(s) + 1)*sizeof(char); i++){	//eseguito (i<n) n/2 volte, se metto i<22 (32>>stlen(s)) non crasha, semplicemente non inserisce altri cartteri
-		p = minC(copy);
-		n[i] = p;
- 		removeC(copy, p);		
+char * last(char *s){
+	int dim = strlen(s),i,j;//printf("%d",dim);
+	const char * r = CyclicRotations(s) ;//printf("%s\n", r);
+	char* *res = malloc((dim + 1)*sizeof(char));
+	char m[dim + 1][dim + 1];
+
+	for(i = 0; i<dim; i++){
+		for(j = 0; j < dim; j++){
+			//printf("insert: %c	", r[i*dim + j] );
+			m[i][j] = r[i*dim + j];
+		}	//	memcpy( m[i], &r[10 ], dim);// &r[10*sizeof(char)]
+		//	m[i] = substring( r, i*dim, dim);
+		m[i][dim] = '\0';
+		printf("%s\n", m[i]);	
 	}
-	n[strlen(s)] = '\0';
-	
-	return n;
-}*/
+	//take m[i][dim-1]
+	/*
+	for(i = 0; i<dim; i++){
+		res[i] = m[i][dim-1];
+	}res[dim]='\0';
+	*/ 
+ 	return res;
+}
 const char * CyclicRotations(char *a){
 	int n =  strlen(a);//let n ß |a|
 	char R[n][n];
@@ -406,9 +377,9 @@ int main(int argc, char *argv[]){
 	printf("	ordered CyclicRotations\n");*/
 	//char b[12] = "ciao mondo"; //OK s<->b
 	//removeC(s,' '); //OK
-	/*a = last(a, strlen(s));
-//	printf("%s%s", z, a);
-	printf("prima: %s\n", s);
+	char * a = "ciao"; //"burrows-wheeler";
+	a = last(a);
+	printf("prima: %s\n", a);
 	printf("dopo: %s", a);
 	printf("	last: OK\n");/**/
 	int i= 0;
@@ -432,21 +403,15 @@ int main(int argc, char *argv[]){
 		printf("%s ",arr[i]);
 		
 	printf("	Order matrix: OK\n");/**/
-/*	a = LyndonFact(a);
-	printf("%s", a);
-	printf("	LyndonFact: OK\n");	*/
-	//free(arr);
-	//free(a);
 	
 	char *test = (char*) malloc(100*sizeof(char));
-    strcpy(test, "I am learning C programming language!");	//abrakadabra//hello WORLD //I am learning C programming language//hola!
-    printf("%s\n", test);
+    strcpy(test, "I am learning C programming language!");	//abrakadabra//hello WORLD //I am learning C programming language//hola!//abacabab
+    printf("prima: %s\n", test);
     int *W = LyndonFact(test);
     int co = 0;
-    //////////////////////////MEMORY LEAK HERE
-    for(i = 0; i < sizeof (W)*2/sizeof(int); i++){
-    	printf("%d ",W[i]);	//giusto il resto è errato
-    	for(; co <= i; co++) {
+    for(i = 1; i < (sizeof(W))*2/sizeof(int); i++){
+    //	printf("%d %d",W[i-1],W[i]);
+    	for(co = W[i-1]; co < W[i]; co++) {
     		printf("%c", test[co]);
     	} 
 		printf("\n");
