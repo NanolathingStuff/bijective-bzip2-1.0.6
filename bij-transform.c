@@ -142,35 +142,88 @@ void removeC(char *str, char c){
 	}
 }
 char * last(char *s){
-	int dim = strlen(s),i,j;//printf("%d",dim);
-	const char * r = CyclicRotations(s) ;//printf("%s\n", r);
-	char* *res = malloc((dim + 1)*sizeof(char));
-	char m[dim + 1][dim + 1];
+	int dim = strlen(s);
+	//int i,j;//printf("%d",dim);
+	//"ciaociaociaociau" FUNZIONE -> problema cyclic rotation	
+	char m[dim ][dim + 1];
+	int i, j, k;//const char * r = CyclicRotations(s) ;printf("rotations: %s\n", r);
+	///CYCLICROTATIONs NOt WORKING: #preprocessore DA QUI
+	for (i = 0; i < dim ; i++){
+		j = i;  
+        k = 0;  
+        while (s[j] != '\0') { 
+            m[i][k] = s[j]; 
+            k++; 
+            j++; 
+        } 
+        j = 0; 
+        while (j < i) { 
+            m[i][k] = s[j]; 
+            j++; 
+            k++; 
+        } 
+        m[i][dim] = '\0'; 
+	}	//A QUI!
+//	char *cyclic = strcpy(cyclic, r);
+	//char copy[dim*dim];
+	//strcpy(copy, r);
+	//printf("test: %c", copy[0]);
+	char *res = (char*)malloc((dim + 1)*sizeof(char));
+	//char m[dim ][dim + 1];
 
-	for(i = 0; i<dim; i++){
+	/*for(i = 0; i<dim; i++){
 		for(j = 0; j < dim; j++){
-			//printf("insert: %c	", r[i*dim + j] );
-			m[i][j] = r[i*dim + j];
+			//printf("insert: %c	", r[(i*dim) + j] );
+			m[i][j] = r[(i*dim) + j];
 		}	//	memcpy( m[i], &r[10 ], dim);// &r[10*sizeof(char)]
+		//printf("\n");
 		//	m[i] = substring( r, i*dim, dim);
 		m[i][dim] = '\0';
-		printf("%s\n", m[i]);	
-	}
+		//printf("%s\n", m[i]);	
+	}//printf("%s\n", m);*/
 	//take m[i][dim-1]
-	/*
+	//////////PRPROCESSOR THIS SHIT in some sort function
+	//orderMatrix(*m, (short)dim);
+	char minS[dim+1], tmp[dim+1];
+	int min_idx;
+	for (i = 0; i < dim-1; i++) { 
+        // Find the minimum element in unsorted array 
+        int min_idx = i; 
+        strcpy(minS, m[i]); 
+        for (j = i+1; j < dim; j++) { 
+            // If min is greater than arr[j] 
+            if (strcmp(minS, m[j]) > 0)  { 
+                // Make arr[j] as minStr and update min_idx 
+                strcpy(minS, m[j]); 
+                min_idx = j; 
+            } 
+        } 
+   
+        // Swap the found minimum element with the first element 
+        if (min_idx != i){  
+            strcpy(tmp, m[i]); //swap item[pos] and item[i] 
+            strcpy(m[i], m[min_idx]); 
+            strcpy(m[min_idx], tmp); 
+        } 
+    } 
+	//sort(m, dim);	
 	for(i = 0; i<dim; i++){
+	//	printf("%s\n", m[i]);
 		res[i] = m[i][dim-1];
-	}res[dim]='\0';
-	*/ 
+	}res[dim]='\0';/**/ 
  	return res;
 }
-const char * CyclicRotations(char *a){
+char * CyclicRotations(char *a){
 	int n =  strlen(a);//let n ß |a|
 	char R[n][n];
-	char *matrix = R[0];//a = R;
+	/*for(i = o to n){r[i]=malloc....}???? GUARDA COmE FARE
+	for( i = 0; i<n; i++)
+		R[i] = malloc(sizeof(char)*n);*/
+	
+	char *matrix = (char*)malloc((n*n+1)*sizeof(char));//R[0];//a = R;//(char*)malloc(n*n*sizeof(char));
 	int i, j, k;
 	
-	for (i = 0; i < n -1; i++){//for(int i = 0; i < a.length(); i++)
+	for (i = 0; i < n ; i++){//for(int i = 0; i < a.length(); i++)
 		j = i;  // Current index in str 
         k = 0;  // Current index in temp 
         while (a[j] != '\0') { 
@@ -188,6 +241,12 @@ const char * CyclicRotations(char *a){
         R[i][n] = '\0'; 
 	}
 	
+	int cont =0;
+	for (i = 0; i < n ; i++)
+		for (j = 0; j < n ; j++){
+			matrix[cont++] = R[i][j];
+		}matrix[n*n] = '\0'; 
+	//printf("copia di:%s\n",a);
 	return matrix;	
 }
 void CyclicRotation(char *a, short size){
@@ -336,8 +395,7 @@ void orderMatrix(char * s, short size){
 //	printf("%s",w[0]);
 }
 //ordered matrix working but crash
-static int myCompare(const void* a, const void* b) { 
-  //??WHAT IS THIS?
+static int myCompare(const void* a, const void* b) { //controlla se 2 oggetti sono identici
     // setting up rules for comparison 
     return strcmp(*(const char**)a, *(const char**)b); 
 } 
@@ -350,6 +408,77 @@ void print(char *t) { 	//@to print strings?
       return;
    printf("%c", *t);
    print(++t);
+}
+void selectionSort(char arr[][256], int n) { 
+    int i, j, min_idx; 
+   
+    // One by one move boundary of unsorted subarray 
+    char minStr[n]; 
+    for (i = 0; i < n-1; i++) 
+    { 
+        // Find the minimum element in unsorted array 
+        int min_idx = i; 
+        strcpy(minStr, arr[i]); 
+        for (j = i+1; j < n; j++) 
+        { 
+            // If min is greater than arr[j] 
+            if (strcmp(minStr, arr[j]) > 0) 
+            { 
+                // Make arr[j] as minStr and update min_idx 
+                strcpy(minStr, arr[j]); 
+                min_idx = j; 
+            } 
+        } 
+   
+        // Swap the found minimum element with the first element 
+        char temp[n]; 
+        if (min_idx != i)  { 
+            strcpy(temp, arr[i]); //swap item[pos] and item[i] 
+            strcpy(arr[i], arr[min_idx]); 
+            strcpy(arr[min_idx], temp); 
+        } 
+    } 
+} 
+
+char * bij_t(char * str){
+	int *W = LyndonFact(str), dim = strlen(str), i = 1, j = 0, cont = 0, l = 0, leng;
+
+	leng = sizeof(W)/sizeof(W[0]);
+	printf("size:%d\n", leng);
+		
+	char *R = (char*)malloc((dim*dim)*sizeof(char));
+	char tmp[dim], c;
+	while (i < leng){
+		printf("%d\n",W[i]);
+		
+		
+		cont = 0;//tmp[0--len] = str[j] ;R = R U CyclicRotations(w), w € W
+		for(; j < W[i];j++){
+			tmp[cont] = str[j];
+			cont++;	
+		}
+		
+		char *m = CyclicRotations(tmp); 
+		printf("%s\n%s %d\n", tmp, m, strlen(m));
+		//strcpy(m,r);
+		for(cont = 0; cont < strlen(m);cont++){
+			//printf("%s",m);
+			c = m[cont];
+			R[l] = c;
+			//printf("%c %c %c\n",  c, m[cont], R[l]); //CAN't ACCESS R[l]
+			l++;	
+		}
+		memset(&tmp[0], 0, sizeof(tmp)); //empty tmp
+		i++;
+		free(m);
+	}
+	//printf("result = %s\n", R);
+	
+	char *res; //= (char*)malloc(strlen(str)*sizeof(char)); //GIà messa il last
+	res = last(R);
+	free(R);
+	printf("return");
+	return res;//str	
 }
 
 int main(int argc, char *argv[]){
@@ -369,17 +498,21 @@ int main(int argc, char *argv[]){
 	printf("		minC, maxC: OK\n");	/**/
 	free(z) ;
 	z = NULL;
-	const char *m = CyclicRotations("BananA$");
-	printf("%s\n", m);
-	printf("	CyclicRotations: OK\n");/**/
+	char *m = CyclicRotations("BananA$");
+	printf("%s", m);
+	printf("	CyclicRotations: OK\n");/*
+	////PROBLEMS PASSING ROTATIONS AS ARGUMENT
+	const char *m1 = CyclicRotations(m);
+	printf("%s", m1);
+	printf("	CyclicRotations: OK\n");*/
 /*	orderMatrix(m, strlen("BananA$"));
 	printf("%s\n", m);
 	printf("	ordered CyclicRotations\n");*/
 	//char b[12] = "ciao mondo"; //OK s<->b
 	//removeC(s,' '); //OK
-	char * a = "ciao"; //"burrows-wheeler";
-	a = last(a);
+	char * a = "burrows-wheeler"; //"burrows-wheeler""ciao";
 	printf("prima: %s\n", a);
+	a = last(a);
 	printf("dopo: %s", a);
 	printf("	last: OK\n");/**/
 	int i= 0;
@@ -419,5 +552,7 @@ int main(int argc, char *argv[]){
     free(test);
     printf("	LyndonFact: OK\n");/**/
     
+    
+    bij_t("hola!");
 	return 0;
 }

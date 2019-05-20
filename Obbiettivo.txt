@@ -1,0 +1,40 @@
+la proposta di stage consiste nel modificare una componente algoritmica di bzip2 
+(https://en.wikipedia.org/wiki/Bzip2), un compressore di dati.
+In particolare quest'ultimo sfrutta la trasformata di Burrows-Wheeler 
+(https://en.wikipedia.org/wiki/Burrows%E2%80%93Wheeler_transform) che permuta i caratteri di una stringa per migliorare la compressione.
+In sintesi bisogna modificare il codice di bzip2 per:
+1. rimuovere la run-length encoding iniziale
+2. sostituire il passo "burrows-wheeler transform" con quella dell'articolo allegato
+
+
+bzip2 is a free and open-source file compression program that uses the Burrows–Wheeler algorithm. It only compresses single files and is not a file archiver
+bzip2 compresses most files more effectively than the older LZW (.Z) and Deflate (.zip and .gz) compression algorithms, but is considerably slower. LZMA is generally more space-efficient than bzip2 at the expense of even slower compression speed, while having much faster decompression.
+Bzip2 uses several layers of compression techniques stacked on top of each other, which occur in the following order during compression and the reverse order during decompression:
+Run-length encoding (RLE) of initial data
+Burrows–Wheeler transform (BWT) or block sorting
+Move to front (MTF) transform
+Run-length encoding (RLE) of MTF result
+Huffman coding
+Selection between multiple Huffman tables
+Unary base 1 encoding of Huffman table selection
+Delta encoding (?) of Huffman code bit-lengths
+Sparse bit array showing which symbols are used
+
+
+
+ROTATION: a(m) denote the mth rotation of a, that is, the string obtained by removing the first m characters
+  	of a and adding these at its end. (PAG 5-6 PDF)
+
+S transform:
+Break a into sub-strings by successively selecting and removing
+its “smallest” suffix. Generate the rotations of each such substring,
+and sort all these rotations together. The transform S is
+then obtained by taking the “last” character of this sorted list.
+pag 11-12
+
+cercare informazioni su siti/comunità compressione
+ciclicrotaions(a): tutte le rotazioni cicliche(matrice), alp = rotazione a
+rotazioni: banana -> ananab,nanaba,anaban,nabana..... 	ordino lessicograficamente
+
+
+OPERATORI BINARI (ce ne sono tanti qui):https://en.wikipedia.org/wiki/Operators_in_C_and_C%2B%2B
