@@ -107,12 +107,12 @@ int* LyndonFact(char* s){ 	//vector<string> duval(string const& s) {
         }
     }
     //printf("\n");
-	int *b = malloc(sizeof(int) * cont); //breaks;/*
-
+	int *b = malloc(sizeof(int) * (cont + 1)); //breaks;/*
+//	static int b[sizeof(int) * cont];
 	for(i = 0; i < cont +1; i++){
 		b[i] = breaks[i];
     //	printf("%d ",b[i]);
-    }
+    }b[i] = -1; //terminal char
     //printf("return\n");
 	return b;
 }
@@ -439,46 +439,46 @@ void selectionSort(char arr[][256], int n) {
         } 
     } 
 } 
-
+/*	leng = sizeof(W)/sizeof(W[0]);
+//	printf("size:%d\n", leng); //always 2 -> error
+		*/
 char * bij_t(char * str){
-	int *W = LyndonFact(str), dim = strlen(str), i = 1, j = 0, cont = 0, l = 0, leng;
+	int *W = LyndonFact(str), dim = strlen(str), i = 1, j = 0, cont = 0, l = 0;
 
-	leng = sizeof(W)/sizeof(W[0]);
-	printf("size:%d\n", leng);
-		
 	char *R = (char*)malloc((dim*dim)*sizeof(char));
 	char tmp[dim], c;
-	while (i < leng){
-		printf("%d\n",W[i]);
-		
-		
+
+	while(i<dim && W[i] != -1){	//(i<dim && notmepty(w[i]) ??? (i < leng)
+	//	printf("%d\n",W[i]);	
 		cont = 0;//tmp[0--len] = str[j] ;R = R U CyclicRotations(w), w € W
 		for(; j < W[i];j++){
 			tmp[cont] = str[j];
 			cont++;	
 		}
 		
-		char *m = CyclicRotations(tmp); 
-		printf("%s\n%s %d\n", tmp, m, strlen(m));
+		char *m =last(tmp); 
+		//printf("%s\n%s %d\n", tmp, m, strlen(m));
 		//strcpy(m,r);
 		for(cont = 0; cont < strlen(m);cont++){
 			//printf("%s",m);
 			c = m[cont];
 			R[l] = c;
-			//printf("%c %c %c\n",  c, m[cont], R[l]); //CAN't ACCESS R[l]
+		//	printf("%c %c %c\n",  c, m[cont], R[l]); //CAN't ACCESS R[l]
 			l++;	
 		}
 		memset(&tmp[0], 0, sizeof(tmp)); //empty tmp
 		i++;
 		free(m);
 	}
+	R[l+1] = '\0';
 	//printf("result = %s\n", R);
+	//print(R);printf("\n");
 	
-	char *res; //= (char*)malloc(strlen(str)*sizeof(char)); //GIà messa il last
-	res = last(R);
-	free(R);
-	printf("return");
-	return res;//str	
+	//char *res; //= (char*)malloc(strlen(str)*sizeof(char)); //GIà messa il last
+	//res = last(R);
+	//free(R);
+//	printf("return\n");
+	return R;//str	
 }
 
 int main(int argc, char *argv[]){
@@ -549,10 +549,11 @@ int main(int argc, char *argv[]){
     	} 
 		printf("\n");
     }	
+   // printf("%d", W[i]);
     free(test);
     printf("	LyndonFact: OK\n");/**/
     
-    
-    bij_t("hola!");
+   	char *bij = bij_t("hola!");
+   	printf("%s	 Transform: OK!\n", bij);
 	return 0;
 }

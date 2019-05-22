@@ -170,7 +170,7 @@ extern UInt32 BZ2_crc32Table[256];	//crctable.c
             BZ2_crc32Table[(crcVar >> 24) ^    \
                            ((UChar)cha)];      \
 }
-
+//and operation between: input leftshifted by 8, crctale rightshifted 24 and other input; @used in: add_pair_to_block,ADD_CHAR_TO_BLOCK, unRLE_obuf_to_output..
 
 
 /*-- States and modes for compression. --*/
@@ -222,8 +222,8 @@ typedef
       Int32    workFactor;
 
       /* run-length-encoding of the input */
-      UInt32   state_in_ch;
-      Int32    state_in_len;	
+      UInt32   state_in_ch;		//value state of other variable: modified only in ADD_CHAR_TO_BLOCK; value:256(default),(*((UChar*)(s->strm->next_in))( else)
+      Int32    state_in_len;	//counter for switch-case: modified only in ADD_CHAR_TO_BLOCK; value:0(default),[1..255] (range)
       BZ_RAND_DECLS;		//used for decompress
 
       /* input and output limits and current posns */

@@ -217,11 +217,11 @@ void add_pair_to_block ( EState* s )
 {	//@used in ADD_CHAR_TO_BLOCK[260], flush_RL[252]
    Int32 i;
    UChar ch = (UChar)(s->state_in_ch);
-   for (i = 0; i < s->state_in_len; i++) {
+   for (i = 0; i < s->state_in_len; i++) {	//updateCRC state_in_len times
       BZ_UPDATE_CRC( s->blockCRC, ch );
    }
    s->inUse[s->state_in_ch] = True;
-   switch (s->state_in_len) {
+   switch (s->state_in_len) {	//update s->array1 with s->state_in_ch
       case 1:
          s->block[s->nblock] = (UChar)ch; s->nblock++;
          break;
@@ -256,7 +256,7 @@ static void flush_RL ( EState* s )
 }
 
 /*---------------------------------------------------*/
-//@ used in handle_compress[360]
+//@ used in copy_input_until_stop[288]
 #define ADD_CHAR_TO_BLOCK(zs,zchh0)               \
 {                                                 \
    UInt32 zchh = (UInt32)(zchh0);                 \
