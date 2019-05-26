@@ -113,9 +113,9 @@ void default_bzfree ( void* opaque, void* addr )
 
 
 /*---------------------------------------------------*/
-static
-void prepare_new_block ( EState* s )
-{	
+//@ used in BZ_API(BZ2_bzCompressInit)[148] , handle_compress[360]
+static void prepare_new_block ( EState* s )
+{		
    Int32 i;
    s->nblock = 0;		//set to 0 position attributes of input
    s->numZ = 0;
@@ -123,7 +123,7 @@ void prepare_new_block ( EState* s )
    BZ_INITIALISE_CRC ( s->blockCRC );	//initialize crc_table
    for (i = 0; i < 256; i++) s->inUse[i] = False;
    s->blockNo++;	//increase misc number block
-}
+}	//set 0 limits and current position, set False blocks in use
 
 
 /*---------------------------------------------------*/
@@ -150,12 +150,12 @@ int BZ_API(BZ2_bzCompressInit)
                      int        blockSize100k,
                      int        verbosity,
                      int        workFactor )
-{
+{			//@function that create a new Estate for the passed bz_stream
    Int32   n;
-   EState* s;
+   EState* s;	//new Estate
 
    if (!bz_config_ok()) return BZ_CONFIG_ERROR;
-
+	//*ERRORS*/
    if (strm == NULL || 
        blockSize100k < 1 || blockSize100k > 9 ||
        workFactor < 0 || workFactor > 250)
@@ -166,7 +166,7 @@ int BZ_API(BZ2_bzCompressInit)
    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
 
    s = BZALLOC( sizeof(EState) );
-   if (s == NULL) return BZ_MEM_ERROR;
+   if (s == NULL) return BZ_MEM_ERROR;	//*//
    s->strm = strm;
 
    s->arr1 = NULL;
@@ -187,8 +187,8 @@ int BZ_API(BZ2_bzCompressInit)
    }
 
    s->blockNo           = 0;
-   s->state             = BZ_S_INPUT;
-   s->mode              = BZ_M_RUNNING;
+   s->state             = BZ_S_INPUT;	//=2
+   s->mode              = BZ_M_RUNNING;	//=2
    s->combinedCRC       = 0;
    s->blockSize100k     = blockSize100k;
    s->nblockMAX         = 100000 * blockSize100k - 19;
@@ -200,14 +200,14 @@ int BZ_API(BZ2_bzCompressInit)
    s->zbits             = NULL;
    s->ptr               = (UInt32*)s->arr1;
 
-   strm->state          = s;
+   strm->state          = s;	//pointer to new Estate
    strm->total_in_lo32  = 0;
    strm->total_in_hi32  = 0;
    strm->total_out_lo32 = 0;
    strm->total_out_hi32 = 0;
    init_RL ( s );
    prepare_new_block ( s );
-   return BZ_OK;
+   return BZ_OK;	//0
 }
 
 
@@ -358,38 +358,38 @@ static Bool copy_output_until_stop ( EState* s )
 
 /*---------------------------------------------------*/
 //@used in BZ_API(BZ2_bzCompress)[407]
-static Bool handle_compress ( bz_stream* strm )	
+static Bool handle_compress ( bz_stream* strm )		//a stream is passed as argument
 {
    Bool progress_in  = False;
    Bool progress_out = False;
-   EState* s = strm->state;
+   EState* s = strm->state;		//declare father struct(container class)
    //check state: if 1: copy input  ; if 2: copy output; switch state at the end
-   while (True) {
-	
-      if (s->state == BZ_S_OUTPUT) {	//BZ_S_OUTPUT = 1
+   while (True) {		//#meaning: BZ_S_OUTPUT = 1 && ( strm->avail_out == 0 || (mode == [3,4] && s should be empty))
+						//         || BZ_S_INPUT = 2 && strm ->avail_in reach value 0
+      if (s->state == BZ_S_OUTPUT) {	//BZ_S_OUTPUT = 1	-> output
          progress_out |= copy_output_until_stop ( s );
-         if (s->state_out_pos < s->numZ) break;
-         if (s->mode == BZ_M_FINISHING && 
+         if (s->state_out_pos < s->numZ) break;	//strm->avail_out == 0 or copy_output_until_stop failed
+         if (s->mode == BZ_M_FINISHING && 	//mode = 4 and s should be empty
              s->avail_in_expect == 0 &&
              isempty_RL(s)) break;
-         prepare_new_block ( s );
-         s->state = BZ_S_INPUT;	//switch state
-         if (s->mode == BZ_M_FLUSHING && 
+         prepare_new_block ( s );		//create new block if empty or error
+         s->state = BZ_S_INPUT;	//switch state to 2 
+         if (s->mode == BZ_M_FLUSHING && 	//mode = 3 && s should be empty
              s->avail_in_expect == 0 &&
              isempty_RL(s)) break;
       }
-
-      if (s->state == BZ_S_INPUT) { //BZ_S_INPUT = 2 
+	////#Compression part
+      if (s->state == BZ_S_INPUT) { //BZ_S_INPUT = 2 -> input
          progress_in |= copy_input_until_stop ( s );
-         if (s->mode != BZ_M_RUNNING && s->avail_in_expect == 0) {
+         if (s->mode != BZ_M_RUNNING && s->avail_in_expect == 0) {	//mode = 2 && expected == 0
             flush_RL ( s );
             BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );
-            s->state = BZ_S_OUTPUT;	//switch state
+            s->state = BZ_S_OUTPUT;	//switch state to 1
          }
          else
          if (s->nblock >= s->nblockMAX) {
             BZ2_compressBlock ( s, False );
-            s->state = BZ_S_OUTPUT;
+            s->state = BZ_S_OUTPUT;	//switch state to 1
          }
          else
          if (s->strm->avail_in == 0) {
@@ -416,40 +416,40 @@ int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
    preswitch:
    switch (s->mode) {
 
-      case BZ_M_IDLE:
+      case BZ_M_IDLE:	//1
          return BZ_SEQUENCE_ERROR;
 
-      case BZ_M_RUNNING:
+      case BZ_M_RUNNING:	//2
          if (action == BZ_RUN) {
             progress = handle_compress ( strm );
             return progress ? BZ_RUN_OK : BZ_PARAM_ERROR;
          } 
          else
-	 if (action == BZ_FLUSH) {
+	 if (action == BZ_FLUSH) {	//1
             s->avail_in_expect = strm->avail_in;
-            s->mode = BZ_M_FLUSHING;
+            s->mode = BZ_M_FLUSHING;	//switch to3
             goto preswitch;
          }
          else
-         if (action == BZ_FINISH) {
+         if (action == BZ_FINISH) {		//2
             s->avail_in_expect = strm->avail_in;
-            s->mode = BZ_M_FINISHING;
+            s->mode = BZ_M_FINISHING;	//switch to 4
             goto preswitch;
          }
          else 
             return BZ_PARAM_ERROR;
 
-      case BZ_M_FLUSHING:
+      case BZ_M_FLUSHING:	//3
          if (action != BZ_FLUSH) return BZ_SEQUENCE_ERROR;
          if (s->avail_in_expect != s->strm->avail_in) 
             return BZ_SEQUENCE_ERROR;
          progress = handle_compress ( strm );
          if (s->avail_in_expect > 0 || !isempty_RL(s) ||
              s->state_out_pos < s->numZ) return BZ_FLUSH_OK;
-         s->mode = BZ_M_RUNNING;
+         s->mode = BZ_M_RUNNING;	//switch to 2
          return BZ_RUN_OK;
 
-      case BZ_M_FINISHING:
+      case BZ_M_FINISHING:	//4
          if (action != BZ_FINISH) return BZ_SEQUENCE_ERROR;
          if (s->avail_in_expect != s->strm->avail_in) 
             return BZ_SEQUENCE_ERROR;
@@ -457,7 +457,7 @@ int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
          if (!progress) return BZ_SEQUENCE_ERROR;
          if (s->avail_in_expect > 0 || !isempty_RL(s) ||
              s->state_out_pos < s->numZ) return BZ_FINISH_OK;
-         s->mode = BZ_M_IDLE;
+         s->mode = BZ_M_IDLE; //switch to 1
          return BZ_STREAM_END;
    }
    return BZ_OK; /*--not reached--*/
@@ -508,7 +508,7 @@ int BZ_API(BZ2_bzDecompressInit)
    s = BZALLOC( sizeof(DState) );
    if (s == NULL) return BZ_MEM_ERROR;
    s->strm                  = strm;
-   strm->state              = s;
+   strm->state              = s;	//pointer to Dstate
    s->state                 = BZ_X_MAGIC_1;
    s->bsLive                = 0;
    s->bsBuff                = 0;

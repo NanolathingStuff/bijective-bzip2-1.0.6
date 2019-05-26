@@ -36,8 +36,8 @@
 /*---------------------------------------------------*/
 void BZ2_bsInitWrite ( EState* s )
 {
-   s->bsLive = 0;
-   s->bsBuff = 0;
+   s->bsLive = 0;	//set the buffers for bit stream 
+   s->bsBuff = 0;	//creation to 0
 }
 
 
@@ -45,10 +45,10 @@ void BZ2_bsInitWrite ( EState* s )
 static
 void bsFinishWrite ( EState* s )
 {
-   while (s->bsLive > 0) {
+   while (s->bsLive > 0) {	//zbits = array, numZ = currentPos
       s->zbits[s->numZ] = (UChar)(s->bsBuff >> 24);
       s->numZ++;
-      s->bsBuff <<= 8;
+      s->bsBuff <<= 8;	//buffer left shifted
       s->bsLive -= 8;
    }
 }
