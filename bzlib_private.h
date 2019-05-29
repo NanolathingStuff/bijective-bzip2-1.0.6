@@ -214,8 +214,8 @@ typedef
 
       /* aliases for arr1 and arr2 */
       UInt32*  ptr;
-      UChar*   block;
-      UInt16*  mtfv;
+      UChar*   block;	//Uchar conversion of arr2(uint32)
+      UInt16*  mtfv;	//Uint16 conversion  of arr1(uint32)
       UChar*   zbits;
 
       /* for deciding when to use the fallback sorting algorithm */
@@ -238,7 +238,7 @@ typedef
       UChar    unseqToSeq[256];
 
       /* the buffer for bit stream creation */
-      UInt32   bsBuff;
+      UInt32   bsBuff;	//used in binary operations
       Int32    bsLive;
 
       /* block and combined CRCs */
@@ -248,10 +248,10 @@ typedef
       /* misc administratium */
       Int32    verbosity;
       Int32    blockNo;		//0 if NULL, indicate?
-      Int32    blockSize100k;
+      Int32    blockSize100k;	//size block(1..9)
 
       /* stuff for coding the MTF values */
-      Int32    nMTF;
+      Int32    nMTF;	//move to front
       Int32    mtfFreq    [BZ_MAX_ALPHA_SIZE];
       UChar    selector   [BZ_MAX_SELECTORS];
       UChar    selectorMtf[BZ_MAX_SELECTORS];
@@ -363,7 +363,7 @@ typedef
       Int32    bsLive;
 
       /* misc administratium */
-      Int32    blockSize100k;
+      Int32    blockSize100k;	//size block[1..9]
       Bool     smallDecompress;
       Int32    currBlockNo;		//0 if NULL, indicate?
       Int32    verbosity;

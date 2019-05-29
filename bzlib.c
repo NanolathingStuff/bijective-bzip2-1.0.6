@@ -196,7 +196,7 @@ int BZ_API(BZ2_bzCompressInit)
    s->workFactor        = workFactor;
 
    s->block             = (UChar*)s->arr2;
-   s->mtfv              = (UInt16*)s->arr1;
+   s->mtfv              = (UInt16*)s->arr1;	//pointer of 16b instead of 32
    s->zbits             = NULL;
    s->ptr               = (UInt32*)s->arr1;
 
@@ -382,13 +382,13 @@ static Bool handle_compress ( bz_stream* strm )		//a stream is passed as argumen
       if (s->state == BZ_S_INPUT) { //BZ_S_INPUT = 2 -> input
          progress_in |= copy_input_until_stop ( s );
          if (s->mode != BZ_M_RUNNING && s->avail_in_expect == 0) {	//mode = 2 && expected == 0
-            flush_RL ( s );
-            BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );
+            flush_RL ( s );	//reset s
+            BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );	//compress
             s->state = BZ_S_OUTPUT;	//switch state to 1
          }
          else
          if (s->nblock >= s->nblockMAX) {
-            BZ2_compressBlock ( s, False );
+            BZ2_compressBlock ( s, False );	//compress, not last block
             s->state = BZ_S_OUTPUT;	//switch state to 1
          }
          else
@@ -563,7 +563,7 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
          s->state_out_len = 1;
          s->state_out_ch = s->k0;
          BZ_GET_FAST(k1); BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
+         k1 ^= BZ_RAND_MASK; s->nblock_used++;		//^= : && binary operator
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
@@ -889,17 +889,17 @@ int BZ_API(BZ2_bzDecompressEnd)  ( bz_stream *strm )
    if (bzf != NULL) bzf->lastErr = eee;   \
 }
 
-typedef 
-   struct {
+//The FILE* arguments passed to BZ2_bzReadOpen / BZ2_bzWriteOpen should be set to binary mode.
+typedef struct {
       FILE*     handle;
       Char      buf[BZ_MAX_UNUSED];
       Int32     bufN;
-      Bool      writing;
+      Bool      writing;	//if write or read mode
       bz_stream strm;
       Int32     lastErr;
       Bool      initialisedOk;
    }
-   bzFile;
+   bzFile;	//used in bzAPI(s),bzopen_or_bzdopen[1383],compressStream(bzip2.c)[329],uncompressStream(bzip2.c)[433], testStream(bzip2.c)[554], (ddltest.c)
 
 
 /*---------------------------------------------*/
@@ -919,12 +919,12 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
                       int   blockSize100k, 
                       int   verbosity,
                       int   workFactor )
-{
+{	//*take values, if OK create and return new BZ_file with those*//
    Int32   ret;
    bzFile* bzf = NULL;
 
    BZ_SETERR(BZ_OK);
-
+	//check parameters for errors 
    if (f == NULL ||
        (blockSize100k < 1 || blockSize100k > 9) ||
        (workFactor < 0 || workFactor > 250) ||
@@ -934,11 +934,11 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    if (ferror(f))
       { BZ_SETERR(BZ_IO_ERROR); return NULL; };
 
-   bzf = malloc ( sizeof(bzFile) );
+   bzf = malloc ( sizeof(bzFile) );	//if not memory error: procede
    if (bzf == NULL)
       { BZ_SETERR(BZ_MEM_ERROR); return NULL; };
 
-   BZ_SETERR(BZ_OK);
+   BZ_SETERR(BZ_OK);	//ser bzfile
    bzf->initialisedOk = False;
    bzf->bufN          = 0;
    bzf->handle        = f;
@@ -1091,7 +1091,7 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
                      int   small,
                      void* unused,
                      int   nUnused )
-{
+{//@Prepare to read compressed data from file handle f.
    bzFile* bzf = NULL;
    int     ret;
 
@@ -1141,9 +1141,9 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
 
 /*---------------------------------------------------*/
 void BZ_API(BZ2_bzReadClose) ( int *bzerror, BZFILE *b )
-{
+{	//@end decompression
    bzFile* bzf = (bzFile*)b;
-
+	
    BZ_SETERR(BZ_OK);
    if (bzf == NULL)
       { BZ_SETERR(BZ_OK); return; };
@@ -1163,12 +1163,12 @@ int BZ_API(BZ2_bzRead)
              BZFILE* b, 
              void*   buf, 
              int     len )
-{
+{	//@used for decompression
    Int32   n, ret;
    bzFile* bzf = (bzFile*)b;
 
    BZ_SETERR(BZ_OK);
-
+	//check values
    if (bzf == NULL || buf == NULL || len < 0)
       { BZ_SETERR(BZ_PARAM_ERROR); return 0; };
 
@@ -1182,18 +1182,18 @@ int BZ_API(BZ2_bzRead)
    bzf->strm.next_out = buf;
 
    while (True) {
-
+		//error
       if (ferror(bzf->handle)) 
          { BZ_SETERR(BZ_IO_ERROR); return 0; };
-
+	
       if (bzf->strm.avail_in == 0 && !myfeof(bzf->handle)) {
          n = fread ( bzf->buf, sizeof(UChar), 
-                     BZ_MAX_UNUSED, bzf->handle );
+                     BZ_MAX_UNUSED, bzf->handle );	//funzione fread() read from stream nmemb elements large size. Put them in buffer from ptr and return number elements read.
          if (ferror(bzf->handle))
             { BZ_SETERR(BZ_IO_ERROR); return 0; };
          bzf->bufN = n;
-         bzf->strm.avail_in = bzf->bufN;
-         bzf->strm.next_in = bzf->buf;
+         bzf->strm.avail_in = bzf->bufN;	//adjust dim
+         bzf->strm.next_in = bzf->buf;		//adjust buffer
       }
 
       ret = BZ2_bzDecompress ( &(bzf->strm) );
@@ -1223,7 +1223,7 @@ void BZ_API(BZ2_bzReadGetUnused)
                        BZFILE* b, 
                        void**  unused, 
                        int*    nUnused )
-{
+{	//@set parameter to unused
    bzFile* bzf = (bzFile*)b;
    if (bzf == NULL)
       { BZ_SETERR(BZ_PARAM_ERROR); return; };
@@ -1252,10 +1252,10 @@ int BZ_API(BZ2_bzBuffToBuffCompress)
                            int           blockSize100k, 
                            int           verbosity, 
                            int           workFactor )
-{
+{	//unused, compress data in memory from one buffer to another buffer in a single function call
    bz_stream strm;
    int ret;
-
+	//handle input, handle errors, BZ2_bzCompressInit, BZ2_bzCompress, BZ2_bzCompressEnd, return
    if (dest == NULL || destLen == NULL || 
        source == NULL ||
        blockSize100k < 1 || blockSize100k > 9 ||
@@ -1268,18 +1268,18 @@ int BZ_API(BZ2_bzBuffToBuffCompress)
    strm.bzfree = NULL;
    strm.opaque = NULL;
    ret = BZ2_bzCompressInit ( &strm, blockSize100k, 
-                              verbosity, workFactor );
+                              verbosity, workFactor );	//function that create a new Estate for the passed bz_stream
    if (ret != BZ_OK) return ret;
 
-   strm.next_in = source;
+   strm.next_in = source;		//char
    strm.next_out = dest;
-   strm.avail_in = sourceLen;
+   strm.avail_in = sourceLen;	//int
    strm.avail_out = *destLen;
 
    ret = BZ2_bzCompress ( &strm, BZ_FINISH );
-   if (ret == BZ_FINISH_OK) goto output_overflow;
-   if (ret != BZ_STREAM_END) goto errhandler;
-
+   if (ret == BZ_FINISH_OK) goto output_overflow;	//skip normal termination
+   if (ret != BZ_STREAM_END) goto errhandler;		//(assembly code)
+	
    /* normal termination */
    *destLen -= strm.avail_out;   
    BZ2_bzCompressEnd ( &strm );
@@ -1490,9 +1490,9 @@ int BZ_API(BZ2_bzread) (BZFILE* b, void* buf, int len )
 
 /*---------------------------------------------------*/
 int BZ_API(BZ2_bzwrite) (BZFILE* b, void* buf, int len )
-{
+{	//call BZ2_bzWrite
    int bzerr;
-
+	
    BZ2_bzWrite(&bzerr,b,buf,len);
    if(bzerr == BZ_OK){
       return len;

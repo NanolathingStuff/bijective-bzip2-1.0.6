@@ -31,9 +31,9 @@ extern "C" {
 #define BZ_FINISH            2
 
 #define BZ_OK                0
-#define BZ_RUN_OK            1
-#define BZ_FLUSH_OK          2
-#define BZ_FINISH_OK         3
+#define BZ_RUN_OK            1	//for compression
+#define BZ_FLUSH_OK          2	//for compression
+#define BZ_FINISH_OK         3	//for compression
 #define BZ_STREAM_END        4
 #define BZ_SEQUENCE_ERROR    (-1)
 #define BZ_PARAM_ERROR       (-2)
@@ -44,7 +44,7 @@ extern "C" {
 #define BZ_UNEXPECTED_EOF    (-7)
 #define BZ_OUTBUFF_FULL      (-8)
 #define BZ_CONFIG_ERROR      (-9)
-//bz_stream
+//bz_stream	;The bz_stream structure holds all data pertaining to the compression activity
 typedef 
    struct {
       char *next_in;
@@ -65,7 +65,7 @@ typedef
    } 
    bz_stream;//used in EState, DState (struct attribute)
 	//used in functions : BZ_API(s), handle_compress, BZ2_decompress
-
+	
 #ifndef BZ_IMPORT
 #define BZ_EXPORT
 #endif
@@ -74,7 +74,7 @@ typedef
 /* Need a definitition for FILE */
 #include <stdio.h>
 #endif
-
+//*Define preprocessor functions*//
 #ifdef _WIN32
 #   include <windows.h>
 #   ifdef small
@@ -102,16 +102,16 @@ BZ_EXTERN int BZ_API(BZ2_bzCompressInit) (
       int        blockSize100k, 
       int        verbosity, 
       int        workFactor 
-   );
+   );	//@initialize bzip2.c[148], used in BZ_API(BZ2_bzWriteOpen) [bzip2.c-916], BZ_API(BZ2_bzBuffToBuffCompress)[bzip2.c-1247]	//Prepares for compression
 
 BZ_EXTERN int BZ_API(BZ2_bzCompress) ( 
       bz_stream* strm, 
       int action 
-   );
+   );	//@initialized in bzlib.c[407],used in BZ_API(BZ2_bzWrite)[bzip2.c-964], BZ_API(BZ2_bzWriteClose64)[bzip2.c-1021],BZ_API(BZ2_bzBuffToBuffCompress)[bzip2.c-1247]
 
 BZ_EXTERN int BZ_API(BZ2_bzCompressEnd) ( 
       bz_stream* strm 
-   );
+   );//@initialize bzip2.c[468], used in BZ_API(BZ2_bzWriteClose64) [bzip2.c-1021], BZ_API(BZ2_bzBuffToBuffCompress)[bzip2.c-1247]
 
 BZ_EXTERN int BZ_API(BZ2_bzDecompressInit) ( 
       bz_stream *strm, 
@@ -143,7 +143,7 @@ BZ_EXTERN BZFILE* BZ_API(BZ2_bzReadOpen) (
       int   small,
       void* unused,    
       int   nUnused 
-   );
+   );	//@initialize bzip2.c[1087], used in uncompressStream[bzip2.c-433], testStream[bzip2.c-554],bzopen_or_bzdopen[blib.h-1387]
 
 BZ_EXTERN void BZ_API(BZ2_bzReadClose) ( 
       int*    bzerror, 
@@ -155,14 +155,14 @@ BZ_EXTERN void BZ_API(BZ2_bzReadGetUnused) (
       BZFILE* b, 
       void**  unused,  
       int*    nUnused 
-   );
+   );//@initialize bzip2.c[1221], used in uncompressStream[bzip2.c-433], testStream[bzip2.c-554]
 
 BZ_EXTERN int BZ_API(BZ2_bzRead) ( 
       int*    bzerror, 
       BZFILE* b, 
       void*   buf, 
       int     len 
-   );
+   );//@initialize bzip2.c[1161], used in BZ_API(BZ2_bzread[bzip2.c-1478], uncompressStream[bzip2.c-433]
 
 BZ_EXTERN BZFILE* BZ_API(BZ2_bzWriteOpen) ( 
       int*  bzerror,      
@@ -170,14 +170,14 @@ BZ_EXTERN BZFILE* BZ_API(BZ2_bzWriteOpen) (
       int   blockSize100k, 
       int   verbosity, 
       int   workFactor 
-   );
+   );//@initialize bzip2.c[916], used in bzopen_or_bzdopen[bzip2.c-1383],compressStream[bzip2.c-329]
 
 BZ_EXTERN void BZ_API(BZ2_bzWrite) ( 
       int*    bzerror, 
       BZFILE* b, 
       void*   buf, 
       int     len 
-   );
+   ); //@initialize bzip2.c[964], used in
 
 BZ_EXTERN void BZ_API(BZ2_bzWriteClose) ( 
       int*          bzerror, 
@@ -209,7 +209,7 @@ BZ_EXTERN int BZ_API(BZ2_bzBuffToBuffCompress) (
       int           blockSize100k, 
       int           verbosity, 
       int           workFactor 
-   );
+   );	//declared in bzlb.c[1247], unused
 
 BZ_EXTERN int BZ_API(BZ2_bzBuffToBuffDecompress) ( 
       char*         dest, 

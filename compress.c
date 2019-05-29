@@ -66,15 +66,15 @@ void bsFinishWrite ( EState* s )
    }                                          \
 }
 //numZ:input and output limits and current posns    //zbits: alias arr1    
-
+//insert right-shifted(24) bsbuff in zbits every 8 bsLive-value
 /*---------------------------------------------------*/
 //bsBuff, bsLive :variables for stream creation
 static
 __inline__
-void bsW ( EState* s, Int32 n, UInt32 v )
+void bsW ( EState* s, Int32 n, UInt32 v )	
 {	
-   bsNEEDW ( n );
-   s->bsBuff |= (v << (32 - s->bsLive - n));
+   bsNEEDW ( n );	//after bsneedw transform pur result in OR with
+   s->bsBuff |= (v << (32 - s->bsLive - n));	//<-this
    s->bsLive += n;
 }
 //@ used in: bsPutUInt32[84], bsPutUChar[95], sendMTFValues ( EState* s )[240],BZ2_compressBlock ( EState* s, Bool is_last_block )[603]
@@ -110,8 +110,8 @@ void makeMaps_e ( EState* s )
    s->nInUse = 0;
    for (i = 0; i < 256; i++)
       if (s->inUse[i]) {
-         s->unseqToSeq[i] = s->nInUse;
-         s->nInUse++;
+         s->unseqToSeq[i] = s->nInUse;	//sign in unseqToSeq the blcks in use
+         s->nInUse++;				//and update the counter
       }
 }
 
@@ -125,7 +125,7 @@ void generateMTFValues ( EState* s )
    Int32   zPend;
    Int32   wr;
    Int32   EOB;
-
+//@// update s->mtfv €[0,1], create variables in cache if (Uchar)0 == s->unseqToSeq[block[j]], j =???
    /* 
       After sorting (eg, here),
          s->arr1 [ 0 .. s->nblock-1 ] holds sorted order,
@@ -152,8 +152,8 @@ void generateMTFValues ( EState* s )
    UChar* block  = s->block;
    UInt16* mtfv  = s->mtfv;
 
-   makeMaps_e ( s );
-   EOB = s->nInUse+1;
+   makeMaps_e ( s );	//maps used blocks
+   EOB = s->nInUse+1;	//END Of Cicle
 
    for (i = 0; i <= EOB; i++) s->mtfFreq[i] = 0;
 
@@ -170,21 +170,21 @@ void generateMTFValues ( EState* s )
 
       if (yy[0] == ll_i) { 
          zPend++;
-      } else {
-
+      } else {	
+		//else update s->mtfv & register(put in CPUcache) some (UChar)vars:  {rtmp, * ryy_j, rll_i}
          if (zPend > 0) {
             zPend--;
-            while (True) {
-               if (zPend & 1) {
-                  mtfv[wr] = BZ_RUNB; wr++; 
+            while (True) {	//TRUE: (zPend >= 2)
+               if (zPend & 1) {	//if most right bit of zPend == 1
+                  mtfv[wr] = BZ_RUNB; wr++; // BZ_RUNB = 1
                   s->mtfFreq[BZ_RUNB]++; 
                } else {
-                  mtfv[wr] = BZ_RUNA; wr++; 
+                  mtfv[wr] = BZ_RUNA; wr++; // BZ_RUNA = 0
                   s->mtfFreq[BZ_RUNA]++; 
                }
                if (zPend < 2) break;
                zPend = (zPend - 2) / 2;
-            };
+            };	//end while
             zPend = 0;
          }
          {
@@ -209,7 +209,7 @@ void generateMTFValues ( EState* s )
 
       }
    }
-
+	// update s->mtfv 
    if (zPend > 0) {
       zPend--;
       while (True) {
@@ -252,7 +252,7 @@ void sendMTFValues ( EState* s )
    are also globals only used in this proc.
    Made global to keep stack frame size small.
    --*/
-
+	//[6][258]
 
    UInt16 cost[BZ_N_GROUPS];
    Int32  fave[BZ_N_GROUPS];
@@ -267,7 +267,7 @@ void sendMTFValues ( EState* s )
    alphaSize = s->nInUse+2;
    for (t = 0; t < BZ_N_GROUPS; t++)
       for (v = 0; v < alphaSize; v++)
-         s->len[t][v] = BZ_GREATER_ICOST;
+         s->len[t][v] = BZ_GREATER_ICOST;	//s->len[0..6][0..inUse+2] = 15
 
    /*--- Decide how many coding tables to use ---*/
    AssertH ( s->nMTF > 0, 3001 );
@@ -601,12 +601,12 @@ void sendMTFValues ( EState* s )
 
 /*---------------------------------------------------*/
 void BZ2_compressBlock ( EState* s, Bool is_last_block )
-{
+{	//@ used in handle_compress[361]{bzlib.c}
    if (s->nblock > 0) {
 
-      BZ_FINALISE_CRC ( s->blockCRC );
+      BZ_FINALISE_CRC ( s->blockCRC );	//crcVar = ~(s->blockCRC);
       s->combinedCRC = (s->combinedCRC << 1) | (s->combinedCRC >> 31);
-      s->combinedCRC ^= s->blockCRC;
+      s->combinedCRC ^= s->blockCRC;	//^= : a=a&b binary operator
       if (s->blockNo > 1) s->numZ = 0;
 
       if (s->verbosity >= 2)
@@ -615,7 +615,7 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
                    s->blockNo, s->blockCRC, s->combinedCRC, s->nblock );
 
       BZ2_blockSort ( s );
-   }
+   }	//end notempty nblock
 
    s->zbits = (UChar*) (&((UChar*)s->arr2)[s->nblock]);
 
