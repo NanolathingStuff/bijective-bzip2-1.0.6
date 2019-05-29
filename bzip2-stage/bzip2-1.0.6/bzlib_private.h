@@ -37,6 +37,7 @@
 /*-- General stuff. --*/
 
 #define BZ_VERSION  "1.0.6, 6-Sept-2010"
+/*@ rename variables	--*/
 
 typedef char            Char;
 typedef unsigned char   Bool;
@@ -46,6 +47,7 @@ typedef unsigned int    UInt32;
 typedef short           Int16;
 typedef unsigned short  UInt16;
 
+//for use boolean value in C
 #define True  ((Bool)1)
 #define False ((Bool)0)
 
@@ -70,6 +72,8 @@ extern void BZ2_bz__AssertH__fail ( int errcode );
 #define AssertD(cond,msg) /* */
 #endif
 
+/*remember: preprocessorr functions -> find and replace the function name with
+the funct body when the compile find the function name*/
 #define VPrintf0(zf) \
    fprintf(stderr,zf)
 #define VPrintf1(zf,za1) \
@@ -193,7 +197,7 @@ extern UInt32 BZ2_crc32Table[256];
 
 /*-- Structure holding all the compression-side stuff. --*/
 
-typedef
+typedef	//EState
    struct {
       /* pointer back to the struct bz_stream */
       bz_stream* strm;
@@ -270,19 +274,19 @@ typedef
 /*-- externs for compression. --*/
 
 extern void 
-BZ2_blockSort ( EState* );
+BZ2_blockSort ( EState* );	//@initialized in blocksort.c [1031] (used in BZ2_compressBlock)
 
 extern void 
-BZ2_compressBlock ( EState*, Bool );
+BZ2_compressBlock ( EState*, Bool ); //@initialized in compress.c [602] (used in handle_compress)
 
 extern void 
-BZ2_bsInitWrite ( EState* );
+BZ2_bsInitWrite ( EState* );	//@initialized in compress.c [37] (used in BZ2_compressBlock)
 
 extern void 
-BZ2_hbAssignCodes ( Int32*, UChar*, Int32, Int32, Int32 );
+BZ2_hbAssignCodes ( Int32*, UChar*, Int32, Int32, Int32 ); //@initialized in huffman.c [155] (used in sendMTFValues)
 
 extern void 
-BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );
+BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );	//@initialized in huffman.c [66] (used in sendMTFValues)
 
 
 
@@ -344,7 +348,7 @@ BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );
 
 /*-- Structure holding all the decompression-side stuff. --*/
 
-typedef
+typedef	//DState
    struct {
       /* pointer back to the struct bz_stream */
       bz_stream* strm;
@@ -482,14 +486,14 @@ typedef
 /*-- externs for decompression. --*/
 
 extern Int32 
-BZ2_indexIntoF ( Int32, Int32* );
+BZ2_indexIntoF ( Int32, Int32* );	//@initialized in bzlib.c [687] (used in BZ_GET_SMALL)
 
 extern Int32 
-BZ2_decompress ( DState* );
+BZ2_decompress ( DState* );		//@initialized in decompress.c [106] (used in BZ_API)
 
 extern void 
 BZ2_hbCreateDecodeTables ( Int32*, Int32*, Int32*, UChar*,
-                           Int32,  Int32, Int32 );
+                           Int32,  Int32, Int32 );	//@initialized in huffman.c [173] (used in BZ2_decompress)
 
 
 #endif

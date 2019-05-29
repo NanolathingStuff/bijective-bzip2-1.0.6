@@ -45,7 +45,7 @@ extern "C" {
 #define BZ_OUTBUFF_FULL      (-8)
 #define BZ_CONFIG_ERROR      (-9)
 
-typedef 
+typedef //bz_stream
    struct {
       char *next_in;
       unsigned int avail_in;
@@ -63,8 +63,8 @@ typedef
       void (*bzfree)(void *,void *);
       void *opaque;
    } 
-   bz_stream;
-
+   bz_stream; //used in EState, DState (struct attribute)
+	//used in functions : BZ_API(s), handle_compress, BZ2_decompress
 
 #ifndef BZ_IMPORT
 #define BZ_EXPORT
@@ -96,6 +96,7 @@ typedef
 
 
 /*-- Core (low-level) library functions --*/
+/*-- initialized in bzlib.c --*/
 
 BZ_EXTERN int BZ_API(BZ2_bzCompressInit) ( 
       bz_stream* strm, 
