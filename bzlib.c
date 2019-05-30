@@ -115,7 +115,7 @@ void default_bzfree ( void* opaque, void* addr )
 /*---------------------------------------------------*/
 //@ used in BZ_API(BZ2_bzCompressInit)[148] , handle_compress[360]
 static void prepare_new_block ( EState* s )
-{		
+{		//allocate memory for BZ2_bzCompress
    Int32 i;
    s->nblock = 0;		//set to 0 position attributes of input
    s->numZ = 0;
@@ -199,10 +199,10 @@ int BZ_API(BZ2_bzCompressInit)
    s->mtfv              = (UInt16*)s->arr1;	//pointer of 16b instead of 32
    s->zbits             = NULL;
    s->ptr               = (UInt32*)s->arr1;
-
+	//Upon return, the internal state will have been allocated and initialised
    strm->state          = s;	//pointer to new Estate
-   strm->total_in_lo32  = 0;
-   strm->total_in_hi32  = 0;
+   strm->total_in_lo32  = 0;	//total_in/total_out have to be
+   strm->total_in_hi32  = 0;	//set to 0
    strm->total_out_lo32 = 0;
    strm->total_out_hi32 = 0;
    init_RL ( s );
@@ -412,7 +412,7 @@ int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
    s = strm->state;
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
-
+	//continue compress untill preswitch
    preswitch:
    switch (s->mode) {
 
@@ -466,7 +466,7 @@ int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
 
 /*---------------------------------------------------*/
 int BZ_API(BZ2_bzCompressEnd)  ( bz_stream *strm )
-{
+{	//Releases all memory associated with a compression stream
    EState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
    s = strm->state;
@@ -493,7 +493,7 @@ int BZ_API(BZ2_bzDecompressInit)
                      ( bz_stream* strm, 
                        int        verbosity,
                        int        small )
-{
+{	//Prepares for decompression. 
    DState* s;
 
    if (!bz_config_ok()) return BZ_CONFIG_ERROR;
@@ -517,7 +517,7 @@ int BZ_API(BZ2_bzDecompressInit)
    strm->total_in_hi32      = 0;
    strm->total_out_lo32     = 0;
    strm->total_out_hi32     = 0;
-   s->smallDecompress       = (Bool)small;
+   s->smallDecompress       = (Bool)small;	//If small!=0, the library will use an alternative decompression algorithm which uses less memory but more slow 
    s->ll4                   = NULL;
    s->ll16                  = NULL;
    s->tt                    = NULL;
@@ -860,7 +860,7 @@ int BZ_API(BZ2_bzDecompress) ( bz_stream *strm )
 
 /*---------------------------------------------------*/
 int BZ_API(BZ2_bzDecompressEnd)  ( bz_stream *strm )
-{
+{//Releases all memory associated with a decompression stream.
    DState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
    s = strm->state;
@@ -956,9 +956,9 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    bzf->strm.avail_in = 0;
    bzf->initialisedOk = True;
    return bzf;   
-}
-
-
+}/*After: bzWrite (OK = 0);
+	bzWriteClose (else);
+*/
 
 /*---------------------------------------------------*/
 void BZ_API(BZ2_bzWrite)
@@ -966,7 +966,7 @@ void BZ_API(BZ2_bzWrite)
                BZFILE* b, 
                void*   buf, 
                int     len )
-{
+{	//@Absorbs len bytes from the buffer buf, eventually to be compressed and written to the file.
    Int32 n, n2, ret;
    bzFile* bzf = (bzFile*)b;
 
@@ -1012,7 +1012,7 @@ void BZ_API(BZ2_bzWriteClose)
                     int           abandon,
                     unsigned int* nbytes_in,
                     unsigned int* nbytes_out )
-{
+{	//call BZ2_bzWriteClose64
    BZ2_bzWriteClose64 ( bzerror, b, abandon, 
                         nbytes_in, NULL, nbytes_out, NULL );
 }
@@ -1026,22 +1026,22 @@ void BZ_API(BZ2_bzWriteClose64)
                     unsigned int* nbytes_in_hi32,
                     unsigned int* nbytes_out_lo32,
                     unsigned int* nbytes_out_hi32 )
-{
+{	//Compresses and flushes to the compressed file all data so far supplied by bzWrite
    Int32   n, n2, ret;
    bzFile* bzf = (bzFile*)b;
-
+	//errors
    if (bzf == NULL)
       { BZ_SETERR(BZ_OK); return; };
    if (!(bzf->writing))
       { BZ_SETERR(BZ_SEQUENCE_ERROR); return; };
    if (ferror(bzf->handle))
       { BZ_SETERR(BZ_IO_ERROR); return; };
-
+	//initialize nbytes	
    if (nbytes_in_lo32 != NULL) *nbytes_in_lo32 = 0;
    if (nbytes_in_hi32 != NULL) *nbytes_in_hi32 = 0;
    if (nbytes_out_lo32 != NULL) *nbytes_out_lo32 = 0;
    if (nbytes_out_hi32 != NULL) *nbytes_out_hi32 = 0;
-
+	//If nbytes_in is non-null, *nbytes_in will be set to be the total volume of uncompressed data handled.
    if ((!abandon) && bzf->lastErr == BZ_OK) {
       while (True) {
          bzf->strm.avail_out = BZ_MAX_UNUSED;
@@ -1122,12 +1122,12 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
    bzf->strm.opaque   = NULL;
    
    while (nUnused > 0) {
-      bzf->buf[bzf->bufN] = *((UChar*)(unused)); bzf->bufN++;
+      bzf->buf[bzf->bufN] = *((UChar*)(unused)); bzf->bufN++;	//start decompress from unused bytes
       unused = ((void*)( 1 + ((UChar*)(unused))  ));
       nUnused--;
    }
 
-   ret = BZ2_bzDecompressInit ( &(bzf->strm), verbosity, small );
+   ret = BZ2_bzDecompressInit ( &(bzf->strm), verbosity, small );	//init decompress
    if (ret != BZ_OK)
       { BZ_SETERR(ret); free(bzf); return NULL; };
 
@@ -1135,7 +1135,7 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
    bzf->strm.next_in  = bzf->buf;
 
    bzf->initialisedOk = True;
-   return bzf;   
+   return bzf;   //return pointer to file
 }
 
 
@@ -1143,7 +1143,7 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
 void BZ_API(BZ2_bzReadClose) ( int *bzerror, BZFILE *b )
 {	//@end decompression
    bzFile* bzf = (bzFile*)b;
-	
+	//Releases all memory pertaining to the compressed file b. bzReadClose
    BZ_SETERR(BZ_OK);
    if (bzf == NULL)
       { BZ_SETERR(BZ_OK); return; };
@@ -1181,11 +1181,11 @@ int BZ_API(BZ2_bzRead)
    bzf->strm.avail_out = len;
    bzf->strm.next_out = buf;
 
-   while (True) {
+   while (True) {	//while error or len reached
 		//error
       if (ferror(bzf->handle)) 
          { BZ_SETERR(BZ_IO_ERROR); return 0; };
-	
+		//Internally, bzRead copies data from the compressed file in chunks of size BZ_MAX_UNUSED bytes before decompressing it
       if (bzf->strm.avail_in == 0 && !myfeof(bzf->handle)) {
          n = fread ( bzf->buf, sizeof(UChar), 
                      BZ_MAX_UNUSED, bzf->handle );	//funzione fread() read from stream nmemb elements large size. Put them in buffer from ptr and return number elements read.
@@ -1196,7 +1196,7 @@ int BZ_API(BZ2_bzRead)
          bzf->strm.next_in = bzf->buf;		//adjust buffer
       }
 
-      ret = BZ2_bzDecompress ( &(bzf->strm) );
+      ret = BZ2_bzDecompress ( &(bzf->strm) );	//Decompression n = bzf->bifN = bzf->strm.avail_in
 
       if (ret != BZ_OK && ret != BZ_STREAM_END)
          { BZ_SETERR(ret); return 0; };
@@ -1206,17 +1206,17 @@ int BZ_API(BZ2_bzRead)
          { BZ_SETERR(BZ_UNEXPECTED_EOF); return 0; };
 
       if (ret == BZ_STREAM_END)
-         { BZ_SETERR(BZ_STREAM_END);
+         { BZ_SETERR(BZ_STREAM_END);//error while decompress
            return len - bzf->strm.avail_out; };
       if (bzf->strm.avail_out == 0)
          { BZ_SETERR(BZ_OK); return len; };
       
-   }
+   }	//return length bytes or error
 
    return 0; /*not reached*/
-}
-
-
+}/*After: collect data from buf, then bzRead or bzReadClose(OK = 0);
+	 collect data from buf, then bzReadClose or bzReadGetUnused (BZ_STREAM_END = 4);
+	bzReadClose (else)*/
 /*---------------------------------------------------*/
 void BZ_API(BZ2_bzReadGetUnused) 
                      ( int*    bzerror, 
@@ -1235,7 +1235,7 @@ void BZ_API(BZ2_bzReadGetUnused)
    BZ_SETERR(BZ_OK);
    *nUnused = bzf->strm.avail_in;
    *unused = bzf->strm.next_in;
-}
+}	//@returns data which was read from the compressed file but was not needed to get to the logical end-of-stream
 #endif
 
 
@@ -1269,12 +1269,12 @@ int BZ_API(BZ2_bzBuffToBuffCompress)
    strm.opaque = NULL;
    ret = BZ2_bzCompressInit ( &strm, blockSize100k, 
                               verbosity, workFactor );	//function that create a new Estate for the passed bz_stream
-   if (ret != BZ_OK) return ret;
-
-   strm.next_in = source;		//char
-   strm.next_out = dest;
-   strm.avail_in = sourceLen;	//int
-   strm.avail_out = *destLen;
+   if (ret != BZ_OK) return ret;	//if error
+	//else bzCompress 
+   strm.next_in = source;		//char	//data to compress
+   strm.next_out = dest;		//char	//where the compressed data is stored
+   strm.avail_in = sourceLen;	//int	//how many bytes input
+   strm.avail_out = *destLen;	//int	//how many bytes output
 
    ret = BZ2_bzCompress ( &strm, BZ_FINISH );
    if (ret == BZ_FINISH_OK) goto output_overflow;	//skip normal termination
@@ -1303,7 +1303,7 @@ int BZ_API(BZ2_bzBuffToBuffDecompress)
                              unsigned int  sourceLen,
                              int           small,
                              int           verbosity )
-{
+{	///@Attempts to decompress the data in source[0 .. sourceLen-1] into the destination buffer, dest[0 .. *destLen-1]. If the destination buffer is big enough
    bz_stream strm;
    int ret;
 

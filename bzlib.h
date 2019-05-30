@@ -117,15 +117,15 @@ BZ_EXTERN int BZ_API(BZ2_bzDecompressInit) (
       bz_stream *strm, 
       int       verbosity, 
       int       small
-   );
+   ); //@initialize bzip2.c[492], used in
 
 BZ_EXTERN int BZ_API(BZ2_bzDecompress) ( 
       bz_stream* strm 
-   );
+   );//@initialize bzip2.c[808], used in
 
 BZ_EXTERN int BZ_API(BZ2_bzDecompressEnd) ( 
       bz_stream *strm 
-   );
+   );//@initialize bzip2.c[862], used in
 
 
 

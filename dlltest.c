@@ -33,9 +33,9 @@ int BZ2DLLLoadLibrary(void)
       fprintf(stderr,"Can't load %s\n",BZ2_LIBNAME);
       return -1;
    }
-   BZ2_bzlibVersion=GetProcAddress(hLib,"BZ2_bzlibVersion");
-   BZ2_bzopen=GetProcAddress(hLib,"BZ2_bzopen");
-   BZ2_bzdopen=GetProcAddress(hLib,"BZ2_bzdopen");
+   BZ2_bzlibVersion=GetProcAddress(hLib,"BZ2_bzlibVersion");	//Yoshioka Tsuneo's functions
+   BZ2_bzopen=GetProcAddress(hLib,"BZ2_bzopen");				//not part of the library
+   BZ2_bzdopen=GetProcAddress(hLib,"BZ2_bzdopen");				//yet			
    BZ2_bzread=GetProcAddress(hLib,"BZ2_bzread");
    BZ2_bzwrite=GetProcAddress(hLib,"BZ2_bzwrite");
    BZ2_bzflush=GetProcAddress(hLib,"BZ2_bzflush");

@@ -219,8 +219,8 @@ typedef
       UChar*   zbits;
 
       /* for deciding when to use the fallback sorting algorithm */
-      Int32    workFactor;
-
+      Int32    workFactor;	//controls how the compression phase behaves when presented with worst case//[0..250], 30 default
+							//@modified in BZ2_bzCompressInit,BZ2_bzWriteOpen, BZ2_bzBuffToBuffCompress, bzopen_or_bzdopen, bzip2.c main
       /* run-length-encoding of the input */
       UInt32   state_in_ch;		//value state of other variable: modified only in ADD_CHAR_TO_BLOCK; value:256(default),(*((UChar*)(s->strm->next_in))( else)
       Int32    state_in_len;	//counter for switch-case: modified only in ADD_CHAR_TO_BLOCK; value:0(default),[1..255] (range)
@@ -246,7 +246,7 @@ typedef
       UInt32   combinedCRC;
 
       /* misc administratium */
-      Int32    verbosity;
+      Int32    verbosity;	//[0..4]. 0 is silent, and greater numbers give increasingly verbose monitoring/debugging output. 
       Int32    blockNo;		//0 if NULL, indicate?
       Int32    blockSize100k;	//size block(1..9)
 
