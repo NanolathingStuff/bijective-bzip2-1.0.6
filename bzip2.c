@@ -1624,7 +1624,7 @@ void license ( void )
 /*---------------------------------------------*/
 static 
 void usage ( Char *fullProgName )
-{
+{	///@specify commad options 
    fprintf (
       stderr,
       "bzip2, a block-sorting file compressor.  "
@@ -1697,7 +1697,7 @@ typedef
       struct zzzz *link;
    }
    Cell;
-
+//@nodes with names
 
 /*---------------------------------------------*/
 static 
@@ -1708,7 +1708,7 @@ void *myMalloc ( Int32 n )
    p = malloc ( (size_t)n );
    if (p == NULL) outOfMemory ();
    return p;
-}
+}	//advanced version of malloc
 
 
 /*---------------------------------------------*/
@@ -1721,13 +1721,13 @@ Cell *mkCell ( void )
    c->name = NULL;
    c->link = NULL;
    return c;
-}
+}	//make empty cell
 
 
 /*---------------------------------------------*/
 static 
 Cell *snocString ( Cell *root, Char *name )
-{
+{	//@if empty create cell with name, else create new one at the end of the list
    if (root == NULL) {
       Cell *tmp = mkCell();
       tmp->name = (Char*) myMalloc ( 5 + strlen(name) );
@@ -1749,11 +1749,11 @@ void addFlagsFromEnvVar ( Cell** argList, Char* varName )
    Int32 i, j, k;
    Char *envbase, *p;
 
-   envbase = getenv(varName);
+   envbase = getenv(varName);	//searches for the environment string pointed to by name and returns the associated value to the string.
    if (envbase != NULL) {
       p = envbase;
       i = 0;
-      while (True) {
+      while (True) {	//p[i] != 0; i++
          if (p[i] == 0) break;
          p += i;
          i = 0;
@@ -1787,7 +1787,7 @@ IntNative main ( IntNative argc, Char *argv[] )
        sizeof(Char)  != 1 || sizeof(UChar)  != 1)
       configError();
 
-   /*-- Initialise --*/
+   /*-- Initialise --*/		//global variables from above
    outputHandleJustInCase  = NULL;
    smallMode               = False;
    keepInputFiles          = False;
@@ -1812,31 +1812,31 @@ IntNative main ( IntNative argc, Char *argv[] )
 #  endif
 #  endif
 
-   copyFileName ( inName,  (Char*)"(none)" );
-   copyFileName ( outName, (Char*)"(none)" );
+   copyFileName ( inName,  (Char*)"(none)" );	//strcpy(in, from)
+   copyFileName ( outName, (Char*)"(none)" );	//if len <=max = 1024
 
    copyFileName ( progNameReally, argv[0] );
-   progName = &progNameReally[0];
+   progName = &progNameReally[0];	//save program name (bzip,bunzip....)
    for (tmp = &progNameReally[0]; *tmp != '\0'; tmp++)
-      if (*tmp == PATH_SEP) progName = tmp + 1;
+      if (*tmp == PATH_SEP) progName = tmp + 1;	//#define PATH_SEP   =    '\\'
 
 
    /*-- Copy flags from env var BZIP2, and 
         expand filename wildcards in arg list.
    --*/
-   argList = NULL;
+   argList = NULL;	
    addFlagsFromEnvVar ( &argList,  (Char*)"BZIP2" );
    addFlagsFromEnvVar ( &argList,  (Char*)"BZIP" );
-   for (i = 1; i <= argc-1; i++)
-      APPEND_FILESPEC(argList, argv[i]);
-
+   for (i = 1; i <= argc-1; i++)	///insert everything else(after the command)	in argList	
+      APPEND_FILESPEC(argList, argv[i]);	//root = snocString (argList, argv[i])
+									//snocString: if empty create cell with name, else create new one at the end of the list
 
    /*-- Find the length of the longest filename --*/
    longestFileName = 7;
    numFileNames    = 0;
    decode          = True;
-   for (aa = argList; aa != NULL; aa = aa->link) {
-      if (ISFLAG("--")) { decode = False; continue; }
+   for (aa = argList; aa != NULL; aa = aa->link) {	//run through list
+      if (ISFLAG("--")) { decode = False; continue; }	//(strcmp(aa->name, (s))==0): (if aa->name == (s:"--"))
       if (aa->name[0] == '-' && decode) continue;
       numFileNames++;
       if (longestFileName < (Int32)strlen(aa->name) )
@@ -1846,53 +1846,53 @@ IntNative main ( IntNative argc, Char *argv[] )
 
    /*-- Determine source modes; flag handling may change this too. --*/
    if (numFileNames == 0)
-      srcMode = SM_I2O; else srcMode = SM_F2F;
+      srcMode = SM_I2O; else srcMode = SM_F2F; //1 or 3
 
 
    /*-- Determine what to do (compress/uncompress/test/cat). --*/
    /*-- Note that subsequent flag handling may change this. --*/
-   opMode = OM_Z;
-
+   opMode = OM_Z;	//global filehandler int32 = 1
+	//@ strstr Returns a pointer to the first occurrence of str2 in str1, or a null pointer if str2 is not part of str1
    if ( (strstr ( progName, "unzip" ) != 0) ||
-        (strstr ( progName, "UNZIP" ) != 0) )
-      opMode = OM_UNZ;
+        (strstr ( progName, "UNZIP" ) != 0) )	
+      opMode = OM_UNZ;	//global filehandler int32 = 2
 
    if ( (strstr ( progName, "z2cat" ) != 0) ||
         (strstr ( progName, "Z2CAT" ) != 0) ||
         (strstr ( progName, "zcat" ) != 0)  ||
         (strstr ( progName, "ZCAT" ) != 0) )  {
-      opMode = OM_UNZ;
-      srcMode = (numFileNames == 0) ? SM_I2O : SM_F2O;
+      opMode = OM_UNZ;	//global filehandler int32 = 2
+      srcMode = (numFileNames == 0) ? SM_I2O : SM_F2O;	//1 or 2
    }
 
 
-   /*-- Look at the flags. --*/
+   /*-- Look at the flags. --*/	//program options in cmd line
    for (aa = argList; aa != NULL; aa = aa->link) {
       if (ISFLAG("--")) break;
       if (aa->name[0] == '-' && aa->name[1] != '-') {
          for (j = 1; aa->name[j] != '\0'; j++) {
             switch (aa->name[j]) {
-               case 'c': srcMode          = SM_F2O; break;
-               case 'd': opMode           = OM_UNZ; break;
-               case 'z': opMode           = OM_Z; break;
-               case 'f': forceOverwrite   = True; break;
-               case 't': opMode           = OM_TEST; break;
-               case 'k': keepInputFiles   = True; break;
-               case 's': smallMode        = True; break;
-               case 'q': noisy            = False; break;
-               case '1': blockSize100k    = 1; break;
-               case '2': blockSize100k    = 2; break;
-               case '3': blockSize100k    = 3; break;
-               case '4': blockSize100k    = 4; break;
-               case '5': blockSize100k    = 5; break;
-               case '6': blockSize100k    = 6; break;
+               case 'c': srcMode          = SM_F2O; break;	//Compress or decompress to standard output.
+               case 'd': opMode           = OM_UNZ; break;	//Force decompression
+               case 'z': opMode           = OM_Z; break;	// The complement to -d: forces compression
+               case 'f': forceOverwrite   = True; break;	//Force overwrite of output files
+               case 't': opMode           = OM_TEST; break;	//Check integrity of the specified file(s)
+               case 'k': keepInputFiles   = True; break;	//Keep (don't delete) input files during compression
+               case 's': smallMode        = True; break;	//Reduce memory usage
+               case 'q': noisy            = False; break;	//Suppress non-essential warning messages
+               case '1': blockSize100k    = 1; break;		//-1 (or --fast) to -9 (or -best)
+               case '2': blockSize100k    = 2; break;		// Set the block size to 100 k, 200 k ... 900 k when compressing
+               case '3': blockSize100k    = 3; break;		//Has no effect when decompressing
+               case '4': blockSize100k    = 4; break;		//
+               case '5': blockSize100k    = 5; break;		//
+               case '6': blockSize100k    = 6; break;		//
                case '7': blockSize100k    = 7; break;
                case '8': blockSize100k    = 8; break;
                case '9': blockSize100k    = 9; break;
-               case 'V':
-               case 'L': license();            break;
+               case 'V':									// Verbose mode -- show the compression ratio for each file processed
+               case 'L': license();            break;		//Display the software version, license terms and conditions.
                case 'v': verbosity++; break;
-               case 'h': usage ( progName );
+               case 'h': usage ( progName );	//help
                          exit ( 0 );
                          break;
                default:  fprintf ( stderr, "%s: Bad flag `%s'\n",
@@ -1905,7 +1905,7 @@ IntNative main ( IntNative argc, Char *argv[] )
       }
    }
    
-   /*-- And again ... --*/
+   /*-- And again ... --*/		//same as up, just flags extended
    for (aa = argList; aa != NULL; aa = aa->link) {
       if (ISFLAG("--")) break;
       if (ISFLAG("--stdout"))            srcMode          = SM_F2O;  else
@@ -1932,8 +1932,8 @@ IntNative main ( IntNative argc, Char *argv[] )
             exit ( 1 );
          }
    }
-
-   if (verbosity > 4) verbosity = 4;
+	//*begin compatibility flags control*//
+   if (verbosity > 4) verbosity = 4;	//verbosity: [1..4]
    if (opMode == OM_Z && smallMode && blockSize100k > 2) 
       blockSize100k = 2;
 
@@ -1958,14 +1958,14 @@ IntNative main ( IntNative argc, Char *argv[] )
 
    if (opMode == OM_Z) {
      if (srcMode == SM_I2O) {
-        compress ( NULL );
+        compress ( NULL );	//compress null
      } else {
         decode = True;
         for (aa = argList; aa != NULL; aa = aa->link) {
            if (ISFLAG("--")) { decode = False; continue; }
            if (aa->name[0] == '-' && decode) continue;
-           numFilesProcessed++;
-           compress ( aa->name );
+           numFilesProcessed++;							//increment number file to compress
+           compress ( aa->name );						///@HERE compress all files one by one [1133]
         }
      }
    } 
@@ -1980,12 +1980,12 @@ IntNative main ( IntNative argc, Char *argv[] )
          for (aa = argList; aa != NULL; aa = aa->link) {
             if (ISFLAG("--")) { decode = False; continue; }
             if (aa->name[0] == '-' && decode) continue;
-            numFilesProcessed++;
-            uncompress ( aa->name );
+            numFilesProcessed++;		//increment number file to decompress
+            uncompress ( aa->name );	///@HERE decompress all files one by on [1314]
          }      
       }
       if (unzFailsExist) { 
-         setExit(2); 
+         setExit(2);	//set exitValue 
          exit(exitValue);
       }
    } 
@@ -1999,10 +1999,10 @@ IntNative main ( IntNative argc, Char *argv[] )
          for (aa = argList; aa != NULL; aa = aa->link) {
 	    if (ISFLAG("--")) { decode = False; continue; }
             if (aa->name[0] == '-' && decode) continue;
-            numFilesProcessed++;
-            testf ( aa->name );
+            numFilesProcessed++;	//increment number file to check
+            testf ( aa->name );		///HERE Check integrity [1512]
 	 }
-      }
+      }	//else recovery
       if (testFailsExist && noisy) {
          fprintf ( stderr,
            "\n"
@@ -2012,7 +2012,7 @@ IntNative main ( IntNative argc, Char *argv[] )
          setExit(2);
          exit(exitValue);
       }
-   }
+   }//*end compatibility flags control*//
 
    /* Free the argument list memory to mollify leak detectors 
       (eg) Purify, Checker.  Serves no other useful purpose.
