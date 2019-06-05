@@ -325,9 +325,9 @@ Bool myfeof ( FILE* f )
 
 
 /*---------------------------------------------*/
-static 
-void compressStream ( FILE *stream, FILE *zStream )
-{
+///@used in compress[1133]
+static void compressStream ( FILE *stream, FILE *zStream )
+{	//compressSteam input- output
    BZFILE* bzf = NULL;
    UChar   ibuf[5000];
    Int32   nIbuf;
@@ -335,24 +335,24 @@ void compressStream ( FILE *stream, FILE *zStream )
    UInt32  nbytes_out_lo32, nbytes_out_hi32;
    Int32   bzerr, bzerr_dummy, ret;
 
-   SET_BINARY_MODE(stream);
-   SET_BINARY_MODE(zStream);
+   SET_BINARY_MODE(stream);		//while(...)setmode ( fileno ( arg ), O_BINARY );                             
+   SET_BINARY_MODE(zStream);	//Apre un file in modalità binaria, invece che come file di testo
 
    if (ferror(stream)) goto errhandler_io;
-   if (ferror(zStream)) goto errhandler_io;
+   if (ferror(zStream)) goto errhandler_io;	//@errhandler_io: send error and exit
 
    bzf = BZ2_bzWriteOpen ( &bzerr, zStream, 
-                           blockSize100k, verbosity, workFactor );   
+                           blockSize100k, verbosity, workFactor );//take values, if OK create and return new BZFILE with those  
    if (bzerr != BZ_OK) goto errhandler;
 
    if (verbosity >= 2) fprintf ( stderr, "\n" );
 
    while (True) {
-
-      if (myfeof(stream)) break;
-      nIbuf = fread ( ibuf, sizeof(UChar), 5000, stream );
+		//(not EOF)
+      if (myfeof(stream)) break;	//if end of file
+      nIbuf = fread ( ibuf, sizeof(UChar), 5000, stream );	//read Uchars of 5000 elements of stream, pointer is ibuff, return number elements
       if (ferror(stream)) goto errhandler_io;
-      if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );
+      if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );	//[964]Absorbs nIbuf bytes from the buffer ibuf, compressed if not error[407](new stream, 0)
       if (bzerr != BZ_OK) goto errhandler;
 
    }
@@ -443,7 +443,7 @@ Bool uncompressStream ( FILE *zStream, FILE *stream )
    nUnused = 0;
    streamNo = 0;
 
-   SET_BINARY_MODE(stream);
+   SET_BINARY_MODE(stream);	//open in binary
    SET_BINARY_MODE(zStream);
 
    if (ferror(stream)) goto errhandler_io;
@@ -454,17 +454,17 @@ Bool uncompressStream ( FILE *zStream, FILE *stream )
       bzf = BZ2_bzReadOpen ( 
                &bzerr, zStream, verbosity, 
                (int)smallMode, unused, nUnused
-            );
+            );		////BLOOCKED HERE
       if (bzf == NULL || bzerr != BZ_OK) goto errhandler;
       streamNo++;
 
-      while (bzerr == BZ_OK) {
+      while (bzerr == BZ_OK) {	//0
          nread = BZ2_bzRead ( &bzerr, bzf, obuf, 5000 );
          if (bzerr == BZ_DATA_ERROR_MAGIC) goto trycat;
          if ((bzerr == BZ_OK || bzerr == BZ_STREAM_END) && nread > 0)
             fwrite ( obuf, sizeof(UChar), nread, stream );
          if (ferror(stream)) goto errhandler_io;
-      }
+      }	//BLOCKED HERE
       if (bzerr != BZ_STREAM_END) goto errhandler;
 
       BZ2_bzReadGetUnused ( &bzerr, bzf, &unusedTmpV, &nUnused );
@@ -963,12 +963,12 @@ FILE* fopen_output_safely ( Char* name, const char* mode )
    FILE*     fp;
    IntNative fh;
    fh = open(name, O_WRONLY|O_CREAT|O_EXCL, S_IWUSR|S_IRUSR);
-   if (fh == -1) return NULL;
+   if (fh == -1) return NULL;	//error handle
    fp = fdopen(fh, mode);
-   if (fp == NULL) close(fh);
+   if (fp == NULL) close(fh);	//function fdopen() link a stream to file descriptor filedestination.
    return fp;
 #  else
-   return fopen(name, mode);
+   return fopen(name, mode);	//return open file mode : w,r,a
 #  endif
 }
 
@@ -1125,7 +1125,7 @@ Bool mapSuffix ( Char* name,
    name[strlen(name)-strlen(oldSuffix)] = 0;
    strcat ( name, newSuffix );
    return True;
-}
+}	////return true if placed the ".bz",".tbz" with ."" ot ."tar"
 
 
 /*---------------------------------------------*/
@@ -1139,25 +1139,25 @@ void compress ( Char *name )
 
    deleteOutputOnInterrupt = False;
 
-   if (name == NULL && srcMode != SM_I2O)
+   if (name == NULL && srcMode != SM_I2O)	//num files = 0
       panic ( "compress: bad modes\n" );
-
+	
    switch (srcMode) {
-      case SM_I2O: 
+      case SM_I2O: 	//1	//num files = 0, flag = c||t
          copyFileName ( inName, (Char*)"(stdin)" );
          copyFileName ( outName, (Char*)"(stdout)" ); 
          break;
-      case SM_F2F: 
+      case SM_F2F: 	//3	//num files != 0
          copyFileName ( inName, name );
          copyFileName ( outName, name );
-         strcat ( outName, ".bz2" ); 
+         strcat ( outName, ".bz2" ); 	//compress to bz2 file
          break;
-      case SM_F2O: 
+      case SM_F2O: //2	//progname=[*cat*], flag = c
          copyFileName ( inName, name );
-         copyFileName ( outName, (Char*)"(stdout)" ); 
+         copyFileName ( outName, (Char*)"(stdout)" ); 	//compress in stdout
          break;
    }
-
+			//not empty and not wild-charts
    if ( srcMode != SM_I2O && containsDubiousChars ( inName ) ) {
       if (noisy)
       fprintf ( stderr, "%s: There are no files matching `%s'.\n",
@@ -1172,7 +1172,7 @@ void compress ( Char *name )
       return;
    }
    for (i = 0; i < BZ_N_SUFFIX_PAIRS; i++) {
-      if (hasSuffix(inName, zSuffix[i])) {
+      if (hasSuffix(inName, zSuffix[i])) {	//if inName has a zSuffix(?bz?)
          if (noisy)
          fprintf ( stderr, 
                    "%s: Input file %s already has %s suffix.\n",
@@ -1261,7 +1261,7 @@ void compress ( Char *name )
 
       case SM_F2F:
          inStr = fopen ( inName, "rb" );
-         outStr = fopen_output_safely ( outName, "wb" );
+         outStr = fopen_output_safely ( outName, "wb" );	//open file output
          if ( outStr == NULL) {
             fprintf ( stderr, "%s: Can't create output file %s: %s.\n",
                       progName, outName, strerror(errno) );
@@ -1282,17 +1282,17 @@ void compress ( Char *name )
          panic ( "compress: bad srcMode" );
          break;
    }
-
+	
    if (verbosity >= 1) {
       fprintf ( stderr,  "  %s: ", inName );
-      pad ( inName );
-      fflush ( stderr );
-   }
+      pad ( inName );	//error
+      fflush ( stderr );	//debug
+   }//END Errors control, beginning compress
 
    /*--- Now the input and output handles are sane.  Do the Biz. ---*/
-   outputHandleJustInCase = outStr;
+   outputHandleJustInCase = outStr;		//output
    deleteOutputOnInterrupt = True;
-   compressStream ( inStr, outStr );
+   compressStream ( inStr, outStr );	/////////[329]//////////////////
    outputHandleJustInCase = NULL;
 
    /*--- If there was an I/O error, we won't get here. ---*/
@@ -1300,8 +1300,8 @@ void compress ( Char *name )
       applySavedTimeInfoToOutputFile ( outName );
       deleteOutputOnInterrupt = False;
       if ( !keepInputFiles ) {
-         IntNative retVal = remove ( inName );
-         ERROR_IF_NOT_ZERO ( retVal );
+         IntNative retVal = remove ( inName );	//delete file inName
+         ERROR_IF_NOT_ZERO ( retVal );	//if ((i) != 0)    ioError();
       }
    }
 
@@ -1327,20 +1327,20 @@ void uncompress ( Char *name )
 
    cantGuess = False;
    switch (srcMode) {
-      case SM_I2O: 
-         copyFileName ( inName, (Char*)"(stdin)" );
+      case SM_I2O: 	//1
+         copyFileName ( inName, (Char*)"(stdin)" );		//custom strcpy
          copyFileName ( outName, (Char*)"(stdout)" ); 
          break;
-      case SM_F2F: 
+      case SM_F2F: 	//3
          copyFileName ( inName, name );
          copyFileName ( outName, name );
          for (i = 0; i < BZ_N_SUFFIX_PAIRS; i++)
-            if (mapSuffix(outName,zSuffix[i],unzSuffix[i]))
-               goto zzz; 
+            if (mapSuffix(outName,zSuffix[i],unzSuffix[i]))	//remove the ".bz",".tbz" with ."" ot ."tar"
+               goto zzz; 	//true uncompress
          cantGuess = True;
          strcat ( outName, ".out" );
          break;
-      case SM_F2O: 
+      case SM_F2O: 	//2
          copyFileName ( inName, name );
          copyFileName ( outName, (Char*)"(stdout)" ); 
          break;
@@ -1406,11 +1406,11 @@ void uncompress ( Char *name )
       /* Save the file's meta-info before we open it.  Doing it later
          means we mess up the access times. */
       saveInputFileMetaInfo ( inName );
-   }
-
+   }	
+	
    switch ( srcMode ) {
 
-      case SM_I2O:
+      case SM_I2O:	//1
          inStr = stdin;
          outStr = stdout;
          if ( isatty ( fileno ( stdin ) ) ) {
@@ -1424,7 +1424,7 @@ void uncompress ( Char *name )
          };
          break;
 
-      case SM_F2O:
+      case SM_F2O:		//2
          inStr = fopen ( inName, "rb" );
          outStr = stdout;
          if ( inStr == NULL ) {
@@ -1436,7 +1436,7 @@ void uncompress ( Char *name )
          };
          break;
 
-      case SM_F2F:
+      case SM_F2F:		//3
          inStr = fopen ( inName, "rb" );
          outStr = fopen_output_safely ( outName, "wb" );
          if ( outStr == NULL) {
@@ -1462,9 +1462,9 @@ void uncompress ( Char *name )
 
    if (verbosity >= 1) {
       fprintf ( stderr, "  %s: ", inName );
-      pad ( inName );
+      pad ( inName );	//compare with max length
       fflush ( stderr );
-   }
+   }//@END exception control
 
    /*--- Now the input and output handles are sane.  Do the Biz. ---*/
    outputHandleJustInCase = outStr;

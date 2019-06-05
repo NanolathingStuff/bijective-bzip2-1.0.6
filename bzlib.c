@@ -162,8 +162,8 @@ int BZ_API(BZ2_bzCompressInit)
      return BZ_PARAM_ERROR;
 
    if (workFactor == 0) workFactor = 30;
-   if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
-   if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
+   if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;	//custom malloc
+   if (strm->bzfree == NULL) strm->bzfree = default_bzfree;		//custom free
 
    s = BZALLOC( sizeof(EState) );
    if (s == NULL) return BZ_MEM_ERROR;	//*//
@@ -291,7 +291,7 @@ static Bool copy_input_until_stop ( EState* s )
    Bool progress_in = False;
 
    if (s->mode == BZ_M_RUNNING) {  //BZ_M_RUNNING = 2
-
+		
       /*-- fast track the common case --*/
       while (True) {
          /*-- block full? --*/
@@ -414,13 +414,13 @@ int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
    if (s->strm != strm) return BZ_PARAM_ERROR;
 	//continue compress untill preswitch
    preswitch:
-   switch (s->mode) {
+   switch (s->mode) {	
 
       case BZ_M_IDLE:	//1
          return BZ_SEQUENCE_ERROR;
 
       case BZ_M_RUNNING:	//2
-         if (action == BZ_RUN) {
+         if (action == BZ_RUN) {	//0
             progress = handle_compress ( strm );
             return progress ? BZ_RUN_OK : BZ_PARAM_ERROR;
          } 
@@ -524,7 +524,7 @@ int BZ_API(BZ2_bzDecompressInit)
    s->currBlockNo           = 0;
    s->verbosity             = verbosity;
 
-   return BZ_OK;
+   return BZ_OK;	//0
 }
 
 
@@ -923,7 +923,7 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    Int32   ret;
    bzFile* bzf = NULL;
 
-   BZ_SETERR(BZ_OK);
+   BZ_SETERR(BZ_OK);	//bzerror = input (BZ_OK)
 	//check parameters for errors 
    if (f == NULL ||
        (blockSize100k < 1 || blockSize100k > 9) ||
@@ -938,7 +938,7 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    if (bzf == NULL)
       { BZ_SETERR(BZ_MEM_ERROR); return NULL; };
 
-   BZ_SETERR(BZ_OK);	//ser bzfile
+   BZ_SETERR(BZ_OK);	//set bzfile
    bzf->initialisedOk = False;
    bzf->bufN          = 0;
    bzf->handle        = f;
@@ -969,7 +969,7 @@ void BZ_API(BZ2_bzWrite)
 {	//@Absorbs len bytes from the buffer buf, eventually to be compressed and written to the file.
    Int32 n, n2, ret;
    bzFile* bzf = (bzFile*)b;
-
+	//arguments: &bzerr, bzf, (void*)ibuf, nIbuf 
    BZ_SETERR(BZ_OK);
    if (bzf == NULL || buf == NULL || len < 0)
       { BZ_SETERR(BZ_PARAM_ERROR); return; };
@@ -987,7 +987,7 @@ void BZ_API(BZ2_bzWrite)
    while (True) {
       bzf->strm.avail_out = BZ_MAX_UNUSED;
       bzf->strm.next_out = bzf->buf;
-      ret = BZ2_bzCompress ( &(bzf->strm), BZ_RUN );
+      ret = BZ2_bzCompress ( &(bzf->strm), BZ_RUN );	//bzf's entire stream, 0
       if (ret != BZ_RUN_OK)
          { BZ_SETERR(ret); return; };
 
@@ -1371,7 +1371,7 @@ const char * BZ_API(BZ2_bzlibVersion)(void)
 
 #ifndef BZ_NO_STDIO
 /*---------------------------------------------------*/
-
+//Apre un file in modalità binaria, invece che come file di testo
 #if defined(_WIN32) || defined(OS2) || defined(MSDOS)
 #   include <fcntl.h>
 #   include <io.h>
