@@ -454,7 +454,7 @@ Bool uncompressStream ( FILE *zStream, FILE *stream )
       bzf = BZ2_bzReadOpen ( 
                &bzerr, zStream, verbosity, 
                (int)smallMode, unused, nUnused
-            );		////BLOOCKED HERE
+            );		
       if (bzf == NULL || bzerr != BZ_OK) goto errhandler;
       streamNo++;
 
@@ -1292,7 +1292,7 @@ void compress ( Char *name )
    /*--- Now the input and output handles are sane.  Do the Biz. ---*/
    outputHandleJustInCase = outStr;		//output
    deleteOutputOnInterrupt = True;
-   compressStream ( inStr, outStr );	/////////[329]//////////////////
+   compressStream ( inStr, outStr );	///////[329]/////////
    outputHandleJustInCase = NULL;
 
    /*--- If there was an I/O error, we won't get here. ---*/
@@ -1865,7 +1865,7 @@ IntNative main ( IntNative argc, Char *argv[] )
       srcMode = (numFileNames == 0) ? SM_I2O : SM_F2O;	//1 or 2
    }
 
-
+	fprintf(stderr, "srcMode, opMode = %d%d\n", opMode, srcMode) ;		/////////////////////////////////////////
    /*-- Look at the flags. --*/	//program options in cmd line
    for (aa = argList; aa != NULL; aa = aa->link) {
       if (ISFLAG("--")) break;
@@ -1955,7 +1955,7 @@ IntNative main ( IntNative argc, Char *argv[] )
       signal (SIGHUP,  mySignalCatcher);
 #     endif
    }
-
+	fprintf(stderr, "FINAL srcMode, opMode = %d%d\n", opMode, srcMode) ;		/////////////////////////////////////////
    if (opMode == OM_Z) {
      if (srcMode == SM_I2O) {
         compress ( NULL );	//compress null
@@ -1963,7 +1963,7 @@ IntNative main ( IntNative argc, Char *argv[] )
         decode = True;
         for (aa = argList; aa != NULL; aa = aa->link) {
            if (ISFLAG("--")) { decode = False; continue; }
-           if (aa->name[0] == '-' && decode) continue;
+           if (aa->name[0] == '-' && decode) continue;	printf(stderr, "compressBegin") ;		/////////////////////////////////////////
            numFilesProcessed++;							//increment number file to compress
            compress ( aa->name );						///@HERE compress all files one by one [1133]
         }
@@ -1979,7 +1979,7 @@ IntNative main ( IntNative argc, Char *argv[] )
          decode = True;
          for (aa = argList; aa != NULL; aa = aa->link) {
             if (ISFLAG("--")) { decode = False; continue; }
-            if (aa->name[0] == '-' && decode) continue;
+            if (aa->name[0] == '-' && decode) continue;		fprintf(stderr, "uncompressBegin") ;		/////////////////////////////////////////
             numFilesProcessed++;		//increment number file to decompress
             uncompress ( aa->name );	///@HERE decompress all files one by on [1314]
          }      
@@ -2013,7 +2013,7 @@ IntNative main ( IntNative argc, Char *argv[] )
          exit(exitValue);
       }
    }//*end compatibility flags control*//
-
+	
    /* Free the argument list memory to mollify leak detectors 
       (eg) Purify, Checker.  Serves no other useful purpose.
    */
