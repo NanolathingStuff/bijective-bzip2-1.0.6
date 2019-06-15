@@ -119,7 +119,7 @@ static void prepare_new_block ( EState* s )
    Int32 i;
    s->nblock = 0;		//set to 0 position attributes of input
    s->numZ = 0;
-   s->state_out_pos = 0;
+   s->state_out_pos = 0;	fprintf(stderr, "prepare_new_block: BZ_INITIALISE_CRC\n") ;		////\////
    BZ_INITIALISE_CRC ( s->blockCRC );	//initialize crc_table
    for (i = 0; i < 256; i++) s->inUse[i] = False;
    s->blockNo++;	//increase misc number block
@@ -205,7 +205,7 @@ int BZ_API(BZ2_bzCompressInit)
    strm->total_in_hi32  = 0;	//set to 0
    strm->total_out_lo32 = 0;
    strm->total_out_hi32 = 0;
-   init_RL ( s );
+   init_RL ( s );			////reset: s->state_in_ch  = 256;s->state_in_len = 0;
    prepare_new_block ( s );
    return BZ_OK;	//0
 }
@@ -251,7 +251,7 @@ void add_pair_to_block ( EState* s )
 //@ used in handle_compress[360]
 static void flush_RL ( EState* s )
 {
-   if (s->state_in_ch < 256) add_pair_to_block ( s ); 
+   if (s->state_in_ch < 256) add_pair_to_block ( s ); //add data from converted input to s->block
    init_RL ( s );	//reset: s->state_in_ch  = 256;s->state_in_len = 0;
 }
 
@@ -383,7 +383,7 @@ static Bool handle_compress ( bz_stream* strm )		//a stream is passed as argumen
          progress_in |= copy_input_until_stop ( s );
          if (s->mode != BZ_M_RUNNING && s->avail_in_expect == 0) {	//mode = 2 && expected == 0
             flush_RL ( s );	//reset s
-            BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );	//compress
+            BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );	//compress [compress.c 603]
             s->state = BZ_S_OUTPUT;	//switch state to 1
          }
          else
@@ -412,8 +412,8 @@ int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
    s = strm->state;
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
-	//continue compress untill preswitch
-   preswitch:
+	//fprintf(stderr, "bzlib.c[990]: compression begin\ns->mode = %d	;\naction = %d\n",s->mode, action) ;		
+   preswitch:	////\//////continue compress untill preswitch
    switch (s->mode) {	
 
       case BZ_M_IDLE:	//1
@@ -946,13 +946,13 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    bzf->strm.bzalloc  = NULL;
    bzf->strm.bzfree   = NULL;
    bzf->strm.opaque   = NULL;
-
+	fprintf(stderr, "bzf->handle = inputFile\n") ;		////\////
    if (workFactor == 0) workFactor = 30;
    ret = BZ2_bzCompressInit ( &(bzf->strm), blockSize100k, 
                               verbosity, workFactor );
    if (ret != BZ_OK)
       { BZ_SETERR(ret); free(bzf); return NULL; };
-
+	
    bzf->strm.avail_in = 0;
    bzf->initialisedOk = True;
    return bzf;   
@@ -960,6 +960,37 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
 	bzWriteClose (else);
 */
 
+/*---------------------------------------------------*/
+/////\////MY IMPLEMENT
+int* LyndonFact(unsigned char* s){ 	//vector<string> duval(string const& s) {
+    int n = strlen(s), i = 0, j, k;
+    
+    int breaks[strlen(s)];
+    breaks[0] = 0;
+ 
+    int cont = 0;
+    while (i < n) {
+        j = i + 1;
+		k = i;
+        while (j < n && s[k] <= s[j]) {
+            if (s[k] < s[j])
+                k = i;
+            else
+                k++;
+            j++;
+        }
+        while (i <= k) {
+        	cont++;
+        	breaks[cont] = i + j - k ;//i + (j - k);
+       	    i += j - k;
+        }
+    }
+	int *b = malloc(sizeof(int) * (cont + 1)); //breaks;/*
+	for(i = 0; i < cont +1; i++){
+		b[i] = breaks[i];
+    }b[i] = -1; //terminal char
+	return b;
+}
 /*---------------------------------------------------*/
 void BZ_API(BZ2_bzWrite)
              ( int*    bzerror, 
@@ -980,9 +1011,9 @@ void BZ_API(BZ2_bzWrite)
 
    if (len == 0)
       { BZ_SETERR(BZ_OK); return; };
-
+	//fprintf(stderr, "strm.avail_in = size;\nstrm.next_in  = input \n") ;		////\////
    bzf->strm.avail_in = len;
-   bzf->strm.next_in  = buf;
+   bzf->strm.next_in  = buf;	//input in strm.next_in
 
    while (True) {
       bzf->strm.avail_out = BZ_MAX_UNUSED;
@@ -994,10 +1025,10 @@ void BZ_API(BZ2_bzWrite)
       if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
          n = BZ_MAX_UNUSED - bzf->strm.avail_out;
          n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar), 
-                       n, bzf->handle );
+                       n, bzf->handle );	//write in bzf->handle the n elements of size Uchar form bzf->buf
          if (n != n2 || ferror(bzf->handle))
             { BZ_SETERR(BZ_IO_ERROR); return; };
-      }
+      }	//fwrite returns the total number of elements successfully returned as a size_t object, which is an integral data type.
 
       if (bzf->strm.avail_in == 0)
          { BZ_SETERR(BZ_OK); return; };
@@ -1049,11 +1080,11 @@ void BZ_API(BZ2_bzWriteClose64)
          ret = BZ2_bzCompress ( &(bzf->strm), BZ_FINISH );
          if (ret != BZ_FINISH_OK && ret != BZ_STREAM_END)
             { BZ_SETERR(ret); return; };
-
+		//enter here
          if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
             n = BZ_MAX_UNUSED - bzf->strm.avail_out;
-            n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar), 
-                          n, bzf->handle );
+            n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar), n, bzf->handle );	//return dimension (max=5000)
+				//fprintf(stderr, "fwrite: %d\n", n2) ;		////\////		
             if (n != n2 || ferror(bzf->handle))
                { BZ_SETERR(BZ_IO_ERROR); return; };
          }
@@ -1076,7 +1107,7 @@ void BZ_API(BZ2_bzWriteClose64)
       *nbytes_out_lo32 = bzf->strm.total_out_lo32;
    if (nbytes_out_hi32 != NULL)
       *nbytes_out_hi32 = bzf->strm.total_out_hi32;
-
+	fprintf(stderr, "BZ2_bzCompressEnd\n") ;		////\////	
    BZ_SETERR(BZ_OK);
    BZ2_bzCompressEnd ( &(bzf->strm) );
    free ( bzf );

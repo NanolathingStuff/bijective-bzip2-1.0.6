@@ -213,7 +213,7 @@ typedef
       Int32    origPtr;
 
       /* aliases for arr1 and arr2 */
-      UInt32*  ptr;
+      UInt32*  ptr;		//UInt32* array1
       UChar*   block;	//Uchar conversion of arr2(uint32)
       UInt16*  mtfv;	//Uint16 conversion  of arr1(uint32)
       UChar*   zbits;
@@ -235,7 +235,7 @@ typedef
       /* map of bytes used in block */
       Int32    nInUse;			//n blocks in use
       Bool     inUse[256];		//wich ones
-      UChar    unseqToSeq[256];
+      UChar    unseqToSeq[256];	//how many used before
 
       /* the buffer for bit stream creation */
       UInt32   bsBuff;	//used in binary operations

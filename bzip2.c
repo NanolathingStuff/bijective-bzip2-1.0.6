@@ -334,7 +334,7 @@ static void compressStream ( FILE *stream, FILE *zStream )
    UInt32  nbytes_in_lo32, nbytes_in_hi32;
    UInt32  nbytes_out_lo32, nbytes_out_hi32;
    Int32   bzerr, bzerr_dummy, ret;
-
+	fprintf(stderr, "compressStream Begin\n") ;		////\////
    SET_BINARY_MODE(stream);		//while(...)setmode ( fileno ( arg ), O_BINARY );                             
    SET_BINARY_MODE(zStream);	//Apre un file in modalità binaria, invece che come file di testo
 
@@ -346,17 +346,28 @@ static void compressStream ( FILE *stream, FILE *zStream )
    if (bzerr != BZ_OK) goto errhandler;
 
    if (verbosity >= 2) fprintf ( stderr, "\n" );
-
+	//fprintf(stderr, "bzf->handle = inputFile\n") ;		////\////
    while (True) {
 		//(not EOF)
       if (myfeof(stream)) break;	//if end of file
-      nIbuf = fread ( ibuf, sizeof(UChar), 5000, stream );	//read Uchars of 5000 elements of stream, pointer is ibuff, return number elements
-      if (ferror(stream)) goto errhandler_io;
-      if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );	//[964]Absorbs nIbuf bytes from the buffer ibuf, compressed if not error[407](new stream, 0)
+      nIbuf = fread ( ibuf, sizeof(UChar), 5000, stream );	//read max 5000 UChars from stream, copy to pointer (ibuff), return number elements
+	  /////\/////MY stuffs
+      if (ferror(stream)) goto errhandler_io;				//nIbuff = dimension ibuf
+	  UChar *buf = ibuf, *copy;
+	  int *lF = LyndonFact(buf);
+	  int i = 1;
+	  while(lF[i] != -1){
+		  copy = malloc(sizeof(UChar)*(lF[i]-lF[i-1])+1);
+		  getSubString(buf, copy, lF[i-1], lF[i]);//strcpy(ibuf(lF[i],lF[i-1]),copy);//TO COMPLETE
+		  //copy[sizeof(UChar)*(lF[i]-lF[i-1])+1] = '\0';
+		if (nIbuf > 0)	BZ2_bzWrite ( &bzerr, bzf, (void*)copy, (lF[i]-lF[i-1]));/**/
+     // if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );	//[bzlib.c964]Absorbs nIbuf bytes from the buffer ibuf, compressed if not error[407](new stream, 0)
       if (bzerr != BZ_OK) goto errhandler;
-
+	//fprintf(stderr, "fread return:%d \n", nIbuf) ;		////\////
+   free(copy); i++;
+	}
    }
-
+	fprintf(stderr, "BZ2_bzWriteClose64\n") ;		////\////	
    BZ2_bzWriteClose64 ( &bzerr, bzf, 0, 
                         &nbytes_in_lo32, &nbytes_in_hi32,
                         &nbytes_out_lo32, &nbytes_out_hi32 );
@@ -930,7 +941,7 @@ void copyFileName ( Char* to, Char* from )
       exit(exitValue);
    }
 
-  strncpy(to,from,FILE_NAME_LEN-10);
+  strncpy(to,from,FILE_NAME_LEN-10);//1024
   to[FILE_NAME_LEN-10]='\0';
 }
 
@@ -1138,10 +1149,10 @@ void compress ( Char *name )
    struct MY_STAT statBuf;
 
    deleteOutputOnInterrupt = False;
-
+	fprintf(stderr, "compressBegin\n") ;		////\////
    if (name == NULL && srcMode != SM_I2O)	//num files = 0
       panic ( "compress: bad modes\n" );
-	
+
    switch (srcMode) {
       case SM_I2O: 	//1	//num files = 0, flag = c||t
          copyFileName ( inName, (Char*)"(stdin)" );
@@ -1865,7 +1876,7 @@ IntNative main ( IntNative argc, Char *argv[] )
       srcMode = (numFileNames == 0) ? SM_I2O : SM_F2O;	//1 or 2
    }
 
-	fprintf(stderr, "srcMode, opMode = %d%d\n", opMode, srcMode) ;		/////////////////////////////////////////
+	fprintf(stderr, "srcMode, opMode = %d%d\n", opMode, srcMode) ;		////\//// /////////////////////////////////////////
    /*-- Look at the flags. --*/	//program options in cmd line
    for (aa = argList; aa != NULL; aa = aa->link) {
       if (ISFLAG("--")) break;
@@ -1955,7 +1966,7 @@ IntNative main ( IntNative argc, Char *argv[] )
       signal (SIGHUP,  mySignalCatcher);
 #     endif
    }
-	fprintf(stderr, "FINAL srcMode, opMode = %d%d\n", opMode, srcMode) ;		/////////////////////////////////////////
+	fprintf(stderr, "FINAL srcMode, opMode = %d%d\n", opMode, srcMode) ;		////\//// /////////////////////////////////////////
    if (opMode == OM_Z) {
      if (srcMode == SM_I2O) {
         compress ( NULL );	//compress null
@@ -1963,7 +1974,7 @@ IntNative main ( IntNative argc, Char *argv[] )
         decode = True;
         for (aa = argList; aa != NULL; aa = aa->link) {
            if (ISFLAG("--")) { decode = False; continue; }
-           if (aa->name[0] == '-' && decode) continue;	printf(stderr, "compressBegin") ;		/////////////////////////////////////////
+           if (aa->name[0] == '-' && decode) continue;	
            numFilesProcessed++;							//increment number file to compress
            compress ( aa->name );						///@HERE compress all files one by one [1133]
         }
