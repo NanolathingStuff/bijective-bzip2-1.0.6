@@ -119,7 +119,7 @@ static void prepare_new_block ( EState* s )
    Int32 i;
    s->nblock = 0;		//set to 0 position attributes of input
    s->numZ = 0;
-   s->state_out_pos = 0;	fprintf(stderr, "prepare_new_block: BZ_INITIALISE_CRC\n") ;		////\////
+   s->state_out_pos = 0;	//fprintf(stderr, "prepare_new_block: BZ_INITIALISE_CRC\n") ;		////\////
    BZ_INITIALISE_CRC ( s->blockCRC );	//initialize crc_table
    for (i = 0; i < 256; i++) s->inUse[i] = False;
    s->blockNo++;	//increase misc number block
@@ -946,7 +946,7 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    bzf->strm.bzalloc  = NULL;
    bzf->strm.bzfree   = NULL;
    bzf->strm.opaque   = NULL;
-	fprintf(stderr, "bzf->handle = inputFile\n") ;		////\////
+	//fprintf(stderr, "bzf->handle = inputFile\n") ;		////\////
    if (workFactor == 0) workFactor = 30;
    ret = BZ2_bzCompressInit ( &(bzf->strm), blockSize100k, 
                               verbosity, workFactor );
@@ -961,11 +961,11 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
 */
 
 /*---------------------------------------------------*/
-/////\////MY IMPLEMENT
+/////\////MY IMPLEMENT [bzlib.h 223]
 int* LyndonFact(unsigned char* s){ 	//vector<string> duval(string const& s) {
-    int n = strlen(s), i = 0, j, k;
+    int n = 5000, i = 0, j, k; //strlen(s) is passed as block of 5000bytes
     
-    int breaks[strlen(s)];
+    int breaks[5000];	//strlen(s): same as above
     breaks[0] = 0;
  
     int cont = 0;
@@ -985,12 +985,40 @@ int* LyndonFact(unsigned char* s){ 	//vector<string> duval(string const& s) {
        	    i += j - k;
         }
     }
-	int *b = malloc(sizeof(int) * (cont + 1)); //breaks;/*
+	int *b = malloc(sizeof(int) * (cont + 1)); //breaks;
 	for(i = 0; i < cont +1; i++){
 		b[i] = breaks[i];
     }b[i] = -1; //terminal char
 	return b;
 }
+/*---------------------------------------------------*/
+int getSubString(unsigned char *source, unsigned char *target,int from, int to){
+	int length=0;
+	int i=0,j=0;
+	
+	//get length
+	while(source[i++]!='\0')
+		length++;
+	
+	if(from<0 || from>length){
+		fprintf(stderr,"Invalid \'from\' index\n");
+		return 1;
+	}
+	if(to>length){
+		fprintf(stderr,"Invalid \'to\' index\n");
+		return 1;
+	}	
+	//target = malloc(sizeof(UChar)*(length+1));
+	for(i=from,j=0;i<=to;i++,j++){
+		target[j]=source[i];
+	}
+	
+	//assign NULL at the end of string
+	target[j]='\0'; 
+	
+	return 0;	
+}
+////\//// ENDOF MY implement
 /*---------------------------------------------------*/
 void BZ_API(BZ2_bzWrite)
              ( int*    bzerror, 
@@ -1107,7 +1135,7 @@ void BZ_API(BZ2_bzWriteClose64)
       *nbytes_out_lo32 = bzf->strm.total_out_lo32;
    if (nbytes_out_hi32 != NULL)
       *nbytes_out_hi32 = bzf->strm.total_out_hi32;
-	fprintf(stderr, "BZ2_bzCompressEnd\n") ;		////\////	
+	//fprintf(stderr, "BZ2_bzCompressEnd\n") ;		////\////	
    BZ_SETERR(BZ_OK);
    BZ2_bzCompressEnd ( &(bzf->strm) );
    free ( bzf );
