@@ -72,11 +72,11 @@ void bsFinishWrite ( EState* s )
 static
 __inline__
 void bsW ( EState* s, Int32 n, UInt32 v )	
-{	
-   bsNEEDW ( n );	//after bsneedw transform pur result in OR with
+{	//@insert in s->zbits, compacter((Uchar)s->bsBuff),	increase buff size
+   bsNEEDW ( n );	//after bsneedw transform put result in OR with
    s->bsBuff |= (v << (32 - s->bsLive - n));	//<-this
    s->bsLive += n;
-}
+}//metti tante printf per vedere che fa
 //@ used in: bsPutUInt32[84], bsPutUChar[95], sendMTFValues ( EState* s )[240],BZ2_compressBlock ( EState* s, Bool is_last_block )[603]
 
 /*---------------------------------------------------*/
@@ -148,8 +148,8 @@ void generateMTFValues ( EState* s )
       except for the last one, which is arranged in 
       compressBlock().
    */
-   UInt32* ptr   = s->ptr;
-   UChar* block  = s->block;
+   UInt32* ptr   = s->ptr;	//array1
+   UChar* block  = s->block;	//block input
    UInt16* mtfv  = s->mtfv;
 
    makeMaps_e ( s );	//maps used blocks
@@ -188,7 +188,7 @@ void generateMTFValues ( EState* s )
             zPend = 0;
          }
          {
-            register UChar  rtmp;
+            register UChar  rtmp;	//put in CPUcache
             register UChar* ryy_j;
             register UChar  rll_i;
             rtmp  = yy[1];
@@ -254,7 +254,7 @@ void sendMTFValues ( EState* s )
    --*/
 	//[6][258]
 
-   UInt16 cost[BZ_N_GROUPS];
+   UInt16 cost[BZ_N_GROUPS];	//[6]
    Int32  fave[BZ_N_GROUPS];
 
    UInt16* mtfv = s->mtfv;
@@ -281,18 +281,18 @@ void sendMTFValues ( EState* s )
    { 
       Int32 nPart, remF, tFreq, aFreq;
 
-      nPart = nGroups;
-      remF  = s->nMTF;
+      nPart = nGroups;	//n coding tables
+      remF  = s->nMTF;	//n MTFv
       gs = 0;
       while (nPart > 0) {
-         tFreq = remF / nPart;
+         tFreq = remF / nPart;	//MTF per coding table
          ge = gs-1;
          aFreq = 0;
          while (aFreq < tFreq && ge < alphaSize-1) {
             ge++;
-            aFreq += s->mtfFreq[ge];
+            aFreq += s->mtfFreq[ge];	//number mtfValues of value ge
          }
-
+		//how can this if become true?
          if (ge > gs 
              && nPart != nGroups && nPart != 1 
              && ((nGroups-nPart) % 2 == 1)) {
@@ -308,8 +308,8 @@ void sendMTFValues ( EState* s )
  
          for (v = 0; v < alphaSize; v++)
             if (v >= gs && v <= ge) 
-               s->len[nPart-1][v] = BZ_LESSER_ICOST; else
-               s->len[nPart-1][v] = BZ_GREATER_ICOST;
+               s->len[nPart-1][v] = BZ_LESSER_ICOST; else	//0
+               s->len[nPart-1][v] = BZ_GREATER_ICOST;		//15
  
          nPart--;
          gs = ge+1;
@@ -319,7 +319,7 @@ void sendMTFValues ( EState* s )
 
    /*--- 
       Iterate up to BZ_N_ITERS times to improve the tables.
-   ---*/
+   ---*/	//0 .. 4 .. ++
    for (iter = 0; iter < BZ_N_ITERS; iter++) {
 
       for (t = 0; t < nGroups; t++) fave[t] = 0;
@@ -334,10 +334,10 @@ void sendMTFValues ( EState* s )
       ---*/
       if (nGroups == 6) {
          for (v = 0; v < alphaSize; v++) {
-            s->len_pack[v][0] = (s->len[1][v] << 16) | s->len[0][v];
+            s->len_pack[v][0] = (s->len[1][v] << 16) | s->len[0][v];	//possible values: 983055, 983040, 15, 0
             s->len_pack[v][1] = (s->len[3][v] << 16) | s->len[2][v];
             s->len_pack[v][2] = (s->len[5][v] << 16) | s->len[4][v];
-	 }
+		}
       }
 
       nSelectors = 0;
@@ -347,7 +347,7 @@ void sendMTFValues ( EState* s )
 
          /*--- Set group start & end marks. --*/
          if (gs >= s->nMTF) break;
-         ge = gs + BZ_G_SIZE - 1; 
+         ge = gs + BZ_G_SIZE - 1; 	//(0 or ge+1) + 49
          if (ge >= s->nMTF) ge = s->nMTF-1;
 
          /*-- 
@@ -355,19 +355,19 @@ void sendMTFValues ( EState* s )
             by each of the coding tables.
          --*/
          for (t = 0; t < nGroups; t++) cost[t] = 0;
-
+			//max dimension and first cicle
          if (nGroups == 6 && 50 == ge-gs+1) {
             /*--- fast track the common case ---*/
             register UInt32 cost01, cost23, cost45;
             register UInt16 icv;
             cost01 = cost23 = cost45 = 0;
-
+			////for (nn = 0 to 50) BZ_ITER(nn) : update len_pack
 #           define BZ_ITER(nn)                \
                icv = mtfv[gs+(nn)];           \
                cost01 += s->len_pack[icv][0]; \
                cost23 += s->len_pack[icv][1]; \
                cost45 += s->len_pack[icv][2]; \
-
+			
             BZ_ITER(0);  BZ_ITER(1);  BZ_ITER(2);  BZ_ITER(3);  BZ_ITER(4);
             BZ_ITER(5);  BZ_ITER(6);  BZ_ITER(7);  BZ_ITER(8);  BZ_ITER(9);
             BZ_ITER(10); BZ_ITER(11); BZ_ITER(12); BZ_ITER(13); BZ_ITER(14);
@@ -391,7 +391,7 @@ void sendMTFValues ( EState* s )
                UInt16 icv = mtfv[i];
                for (t = 0; t < nGroups; t++) cost[t] += s->len[t][icv];
             }
-         }
+         }//END generate constants
  
          /*-- 
             Find the coding table which is best for this group,
@@ -450,7 +450,7 @@ void sendMTFValues ( EState* s )
       for (t = 0; t < nGroups; t++)
          BZ2_hbMakeCodeLengths ( &(s->len[t][0]), &(s->rfreq[t][0]), 
                                  alphaSize, 17 /*20*/ );
-   }
+   }	//END For  4times
 
 
    AssertH( nGroups < 8, 3002 );
@@ -605,7 +605,7 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
    if (s->nblock > 0) {
 
       BZ_FINALISE_CRC ( s->blockCRC );	//crcVar = ~(s->blockCRC);
-      s->combinedCRC = (s->combinedCRC << 1) | (s->combinedCRC >> 31);
+      s->combinedCRC = (s->combinedCRC << 1) | (s->combinedCRC >> 31);	//combinedCRC *2
       s->combinedCRC ^= s->blockCRC;	//^= : a=a&b binary operator
       if (s->blockNo > 1) s->numZ = 0;
 
@@ -621,21 +621,21 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
 
    /*-- If this is the first block, create the stream header. --*/
    if (s->blockNo == 1) {
-      BZ2_bsInitWrite ( s );
-      bsPutUChar ( s, BZ_HDR_B );
-      bsPutUChar ( s, BZ_HDR_Z );
-      bsPutUChar ( s, BZ_HDR_h );
-      bsPutUChar ( s, (UChar)(BZ_HDR_0 + s->blockSize100k) );
+      BZ2_bsInitWrite ( s );	//initialize s.live and s.buff = 0
+      bsPutUChar ( s, BZ_HDR_B );	//bsW( s, 8, c ); //c ='B'
+      bsPutUChar ( s, BZ_HDR_Z );					//c ='Z'
+      bsPutUChar ( s, BZ_HDR_h );					//c ='h'
+      bsPutUChar ( s, (UChar)(BZ_HDR_0 + s->blockSize100k) );	//c = Uchar blockSize100k
    }
 
    if (s->nblock > 0) {
-
-      bsPutUChar ( s, 0x31 ); bsPutUChar ( s, 0x41 );
-      bsPutUChar ( s, 0x59 ); bsPutUChar ( s, 0x26 );
-      bsPutUChar ( s, 0x53 ); bsPutUChar ( s, 0x59 );
+		//bsW( s, 8, c );
+      bsPutUChar ( s, 0x31 ); bsPutUChar ( s, 0x41 );	//c =codici speciali
+      bsPutUChar ( s, 0x59 ); bsPutUChar ( s, 0x26 );	//c =codici speciali
+      bsPutUChar ( s, 0x53 ); bsPutUChar ( s, 0x59 );	//c =codici speciali
 
       /*-- Now the block's CRC, so it is in a known place. --*/
-      bsPutUInt32 ( s, s->blockCRC );
+      bsPutUInt32 ( s, s->blockCRC );	//4 bsw:for(i = 24;i>=0;i-=8) bsw(s,8,(s->blockCRC >> i) & 0xffL);  
 
       /*-- 
          Now a single bit indicating (non-)randomisation. 
@@ -657,7 +657,7 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
    /*-- If this is the last block, add the stream trailer. --*/
    if (is_last_block) {
 
-      bsPutUChar ( s, 0x17 ); bsPutUChar ( s, 0x72 );
+      bsPutUChar ( s, 0x17 ); bsPutUChar ( s, 0x72 );//c =codici speciali
       bsPutUChar ( s, 0x45 ); bsPutUChar ( s, 0x38 );
       bsPutUChar ( s, 0x50 ); bsPutUChar ( s, 0x90 );
       bsPutUInt32 ( s, s->combinedCRC );

@@ -229,9 +229,9 @@ void fallbackSort ( UInt32* fmap,
    if (verb >= 4)
       VPrintf0 ( "        bucket sorting ...\n" );
    for (i = 0; i < 257;    i++) ftab[i] = 0;
-   for (i = 0; i < nblock; i++) ftab[eclass8[i]]++;
-   for (i = 0; i < 256;    i++) ftabCopy[i] = ftab[i];
-   for (i = 1; i < 257;    i++) ftab[i] += ftab[i-1];
+   for (i = 0; i < nblock; i++) ftab[eclass8[i]]++;		//Uchar conversion arr2
+   for (i = 0; i < 256;    i++) ftabCopy[i] = ftab[i];	//copy ftab
+   for (i = 1; i < 257;    i++) ftab[i] += ftab[i-1];	//finish ftab
 
    for (i = 0; i < nblock; i++) {
       j = eclass8[i];
@@ -239,7 +239,7 @@ void fallbackSort ( UInt32* fmap,
       ftab[j] = k;
       fmap[k] = i;
    }
-
+	
    nBhtab = 2 + (nblock / 32);
    for (i = 0; i < nBhtab; i++) bhtab[i] = 0;
    for (i = 0; i < 256; i++) SET_BH(ftab[i]);
@@ -583,12 +583,12 @@ __inline__
 UChar mmed3 ( UChar a, UChar b, UChar c )
 {
    UChar t;
-   if (a > b) { t = a; a = b; b = t; };
+   if (a > b) { t = a; a = b; b = t; };	//b>a
    if (b > c) { 
-      b = c;
-      if (a > b) b = a;
+      b = c;	//b<=c
+      if (a > b) b = a;	//b<=a
    }
-   return b;
+   return b;	//the middle one
 }
 
 #define mmin(a,b) ((a) < (b)) ? (a) : (b)
@@ -657,7 +657,7 @@ void mainQSort3 ( UInt32* ptr,
             mmed3 ( block[ptr[ lo         ]+d],
                     block[ptr[ hi         ]+d],
                     block[ptr[ (lo+hi)>>1 ]+d] );
-
+	//med = the middle of the 3
       unLo = ltLo = lo;
       unHi = gtHi = hi;
 
@@ -755,7 +755,7 @@ void mainSort ( UInt32* ptr,
                 Int32   nblock,
                 Int32   verb,
                 Int32*  budget )
-{
+{	//s->[VAR], quadrant = (UInt16*)(&(block[i])); 1<=budget<=100
    Int32  i, j, k, ss, sb;
    Int32  runningOrder[256];
    Bool   bigDone[256];
@@ -768,7 +768,7 @@ void mainSort ( UInt32* ptr,
 
    /*-- set up the 2-byte frequency table --*/
    for (i = 65536; i >= 0; i--) ftab[i] = 0;
-
+	//ftab[j] = {0..1}, related with quadrant
    j = block[0] << 8;
    i = nblock-1;
    for (; i >= 3; i -= 4) {
@@ -848,7 +848,7 @@ void mainSort ( UInt32* ptr,
          for (i = h; i <= 255; i++) {
             vv = runningOrder[i];
             j = i;
-            while ( BIGFREQ(runningOrder[j-h]) > BIGFREQ(vv) ) {
+            while ( BIGFREQ(runningOrder[j-h]) > BIGFREQ(vv) ) {	//BIGFREQ(b)=(ftab[((b)+1) << 8] - ftab[(b) << 8])
                runningOrder[j] = runningOrder[j-h];
                j = j - h;
                if (j <= (h - 1)) goto zero;

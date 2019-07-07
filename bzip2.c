@@ -334,6 +334,7 @@ static void compressStream ( FILE *stream, FILE *zStream )
    UInt32  nbytes_in_lo32, nbytes_in_hi32;
    UInt32  nbytes_out_lo32, nbytes_out_hi32;
    Int32   bzerr, bzerr_dummy, ret;
+   Int32 i = 0, cont = 1;	//counter and check rest isn't empty string
 	//fprintf(stderr, "compressStream Begin\n") ;		////\////
    SET_BINARY_MODE(stream);		//while(...)setmode ( fileno ( arg ), O_BINARY );                             
    SET_BINARY_MODE(zStream);	//Apre un file in modalità binaria, invece che come file di testo
@@ -347,31 +348,45 @@ static void compressStream ( FILE *stream, FILE *zStream )
 
    if (verbosity >= 2) fprintf ( stderr, "\n" );
 	//fprintf(stderr, "bzf->handle = inputFile\n") ;		////\////
+
    while (True) {
 		//(not EOF)
-      if (myfeof(stream)) break;	//if end of file
-      nIbuf = fread ( ibuf, sizeof(UChar), 5000, stream );	//read max 5000 UChars from stream, copy to pointer (ibuff), return number elements
-      if (ferror(stream)) goto errhandler_io;				//nIbuff = dimension ibuf
-	  /////\/////MY stuffs
-	  UChar *buf = ibuf, *copy;
-	  int *lF = LyndonFact(buf);
-	  int i = 1;
+		if (myfeof(stream)) break;	//if end of file
+		nIbuf = fread ( ibuf, sizeof(UChar), 5000, stream );	//read max 5000 UChars from stream, copy to pointer (ibuff), return number elements
+		if (ferror(stream)) goto errhandler_io;				//nIbuff = dimension ibuf
+		/////\/////MY stuffs
+		UChar *buf = ibuf, *copy;
+		Int32 *lF = LyndonFact(buf);
+	  /* i = 0;
 	  while(lF[i] != -1){
-		  copy = malloc(sizeof(UChar)*(lF[i]-lF[i-1])+1);
-		  printf("da %d, a %d",lF[i],lF[i-1]);
-		  getSubString(buf, copy, lF[i-1], lF[i]);//strcpy(ibuf(lF[i],lF[i-1]),copy);//TO COMPLETE
+		printf("%d ",lF[i]); i++;
+	  }printf("\n"); */
+			i = 1;
+		while(lF[i] != -1){	//lF[i] aggiunge un pezzo, [i+1] ne toglie
+			copy = malloc(sizeof(UChar)*((lF[i]-lF[i-1])+2)); //con 100 risolvo alcuni problemi, con n<2 *cont ho problemi sopra i 10k, con 2*cont mi copia parti in più sopra i 5 k
+			//dovrebbe spostare inizio puntatore (se tempo vedi con valgrind)
+			//printf("da %d, a %d\n",lF[i-1],lF[i]);		//control breaks
+			//, sizeof(UChar)*(lF[i]-lF[i-1])
+			if(getSubString(buf, copy, lF[i-1], lF[i]) == -1) { //do last write and break;//strcpy(ibuf(lF[i],lF[i-1]),copy);//TO COMPLETE
+				//if (nIbuf > 0)	BZ2_bzWrite ( &bzerr, bzf, (void*)copy, (lF[i]-lF[i-1]));
+				break;}
 		  //copy[sizeof(UChar)*(lF[i]-lF[i-1])+1] = '\0';
-		if (nIbuf > 0)	BZ2_bzWrite ( &bzerr, bzf, (void*)copy, (lF[i]-lF[i-1]));/**/
-      //if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );	//[bzlib.c964]Absorbs nIbuf bytes from the buffer ibuf, compressed if not error[407](new stream, 0)
-      if (bzerr != BZ_OK) goto errhandler;
+			if (nIbuf > 0)	BZ2_bzWrite ( &bzerr, bzf, (void*)copy, (lF[i]-lF[i-1]));/**/
+			//if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );	//[bzlib.c964]Absorbs nIbuf bytes from the buffer ibuf, compressed if not error[407](new stream, 0)
+		if (bzerr != BZ_OK) goto errhandler;
 	//fprintf(stderr, "fread return:%d \n", nIbuf) ;		////\////
-	free(copy); i++;	
-	}	/////\/////END modify
-   }
-	//fprintf(stderr, "BZ2_bzWriteClose64\n") ;		////\////	
+		if((lF[i]-lF[i-1])>0 && copy != NULL){	//con malloc si incrementa size di copy senza spostare puntatore -> free needed
+			//printf("free(copy);	%p\n", (void*)&copy); 
+			free(copy); i++;
+			cont++;	//counter iteration (needed for malloc?)
+			}	//cont = SEE UP
+		}//printf("free(LyndonFact)\n");	
+		free(lF);/////\/////END modify
+   }	//IN caso di "double free or corruption (!prev)" non arriva qui
+	//fprintf(stderr, "BZ2_bzWriteClose64\n") ;		////\////	&bzerr, bzf, 0,
    BZ2_bzWriteClose64 ( &bzerr, bzf, 0, 
                         &nbytes_in_lo32, &nbytes_in_hi32,
-                        &nbytes_out_lo32, &nbytes_out_hi32 );
+                        &nbytes_out_lo32, &nbytes_out_hi32 );		
    if (bzerr != BZ_OK) goto errhandler;
 
    if (ferror(zStream)) goto errhandler_io;
@@ -2036,7 +2051,7 @@ IntNative main ( IntNative argc, Char *argv[] )
       free(aa);
       aa = aa2;
    }
-
+	//printf("no errors\n");
    return exitValue;
 }
 

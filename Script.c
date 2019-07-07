@@ -7,13 +7,17 @@
 #include <fcntl.h>
 #include <string.h>
 
+#define SUBDIR "./Test-files/"
 #define DEF "bzip2 -k "
 #define MINE "./"
 #define COMPRESSED ".bz2"
+#define NFILES 15
 
 struct timeval  tv1, tv2;
 struct stat buffer;
-const char *filenames[1000] = {"Steps.txt", "Sempty.txt",  "bij-transform.c","a-bijective.pdf"};
+///INSERT file names to try here
+const char *filenames[1000] = {"Steps.txt", "Sempty.txt",  "bij-transform.c","a-bijective.pdf","4.mp3", "r1000", "r5000",
+								"zeros", "x", "x1", "x2","x3","x4", "tcgen.exe", "tcgen.cpp"};
 
 int main(){
 
@@ -28,7 +32,7 @@ int main(){
 	
 	int i = 0, status, size, corr;
 	
-	for(i = 0; i<4; i++){ //while()...{
+	for(i = 0; i < NFILES; i++){ //while()...{
 		/* stuff to do! */
 		corr = 0;
 		command1 = malloc(60*sizeof(char));//char command[60]; //string = malloc (60 chars);
@@ -39,6 +43,7 @@ int main(){
 		strcat(output, COMPRESSED);
 		//BZIP2
 		strcpy(command1, DEF);//string = strcat(default, filenames[i])
+		//strcat(command1, SUBDIR);
 		strcat(command1, filenames[i]);	//strcat(str, "strings ");
 		gettimeofday(&tv1, NULL);
 		system(command1);//("bzip2 -k Steps.txt ");	//exe
@@ -62,6 +67,7 @@ int main(){
 		
 		strcpy(command2, MINE);	//string = strcat(mine, default, filenames[i])	
 		strcat(command2, DEF);
+		//strcat(command2, SUBDIR);
 		strcat(command2, filenames[i]);
 		gettimeofday(&tv1, NULL);
 		system(command2); //("bzip2 -k Steps.txt ");

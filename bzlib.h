@@ -178,35 +178,6 @@ BZ_EXTERN void BZ_API(BZ2_bzWrite) (
       void*   buf, 
       int     len 
    ); //@initialize bzip2.c[964], used in
-int* LyndonFact(unsigned char* s);//@initialize bzip2.c[965], used in compressStream[335]
-
-int  getSubString(unsigned char *source, unsigned char *target,int from, int to)
-{
-	int length=0;
-	int i=0,j=0;
-	
-	//get length
-	while(source[i++]!='\0')
-		length++;
-	
-	if(from<0 || from>length){
-		fprintf(stderr,"Invalid \'from\' index\n");
-		return 1;
-	}
-	if(to>length){
-		fprintf(stderr,"Invalid \'to\' index\n");
-		return 1;
-	}	
-	//target = malloc(sizeof(UChar)*(length+1));
-	for(i=from,j=0;i<=to;i++,j++){
-		target[j]=source[i];
-	}
-	
-	//assign NULL at the end of string
-	target[j]='\0'; 
-	
-	return 0;	
-}
 
 BZ_EXTERN void BZ_API(BZ2_bzWriteClose) ( 
       int*          bzerror, 
@@ -248,8 +219,10 @@ BZ_EXTERN int BZ_API(BZ2_bzBuffToBuffDecompress) (
       int           small, 
       int           verbosity 
    );
-
-
+/////\////MY STUFFS
+int* LyndonFact(unsigned char* s);//@initialize bzip2.c[965], used in compressStream[335]
+int  getSubString(unsigned char *source, unsigned char *target,int from, int to);//@initialize bzip2.c[995], used in compressStream[361]
+//, int length
 /*--
    Code contributed by Yoshioka Tsuneo (tsuneo@rr.iij4u.or.jp)
    to support better zlib compatibility.
